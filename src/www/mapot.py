@@ -100,8 +100,39 @@ def create_app():
             data = {'first': days[0], 'last': days[-1], 'missing': missing}
             return jsonify(data)
         else:
-            # return day-by-day stats for macs
+            # check if stats table is available
             try:
+                cur.execute('select count(*) from sqlite_master where type=? and name=?', ('table', 'stats'))
+            except sqlite3.OperationalError as e:
+                return jsonify({'status': 'error', 'message': 'sqlite3 db is not accessible'}), 500
+            if cur.fetchone()[0] == 1:
+            # return day-by-day stats for macs
+                params = ','.join(['?']*len(macs))
+                sql = f'''select mac.id, address from mac
+                    inner join vendor on vendor.id=mac.vendor
+                    where address in ({params});'''
+                cur.execute(sql, macs)
+                mac_ids = {}
+                for row in cur.fetchall():
+                    mac_ids[row[0]] = row[1]
+                data = []
+                for m in list(mac_ids.keys()):
+                    md = []
+                    ssids = set()
+                    sql = 'select date, first_seen, last_seen, count, min, max, avg, med, ssids from stats where mac_id=?'
+                    cur.execute(sql, (m,))
+                    for d, first, last, count, rmin, rmax, ravg, rmed, ssid in cur.fetchall():
+                        first = time.mktime(time.strptime(f'{d}T{first}', '%Y-%m-%dT%H:%M:%S'))*1000
+                        last = time.mktime(time.strptime(f'{d}T{last}', '%Y-%m-%dT%H:%M:%S'))*1000
+                        md.append({'day':d.replace('-', ''), 'count':count,
+                            'last': last, 'first': first, 'min': rmin, 'max': rmax, 'avg': ravg, 'median': rmed})
+                        ssids = ssids.union(ssid.split(','))
+                    ssids = sorted(list(ssids))
+                    if '' in ssids:
+                        ssids.remove('')
+                    data.append({'mac': mac_ids[m], 'days': md, 'ssids': ssids})
+                return jsonify(data)
+            else:
                 params = ','.join(['?']*len(macs))
                 sql = f'''select date,mac.address,rssi,ssid.name from probemon
                  inner join ssid on ssid.id=probemon.ssid
@@ -109,40 +140,38 @@ def create_app():
                  where mac.address in ({params})'''
                 sql_args = macs
                 cur.execute(sql, sql_args)
-            except sqlite3.OperationalError as e:
-                return jsonify({'status': 'error', 'message': 'sqlite3 db is not accessible'}), 500
-            # WARNING: this is copy-pasted from stats.py
-            stats = {}
-            for row in cur.fetchall():
-                if row[1] not in list(stats.keys()):
-                    stats[row[1]] = {'ssids': set()}
-                stats[row[1]]['ssids'].add(row[3])
-                day = time.strftime('%Y%m%d', time.localtime(row[0]))
-                if day in stats[row[1]]:
-                    smd = stats[row[1]][day]
-                    smd['rssi'].append(row[2])
-                    if row[0] > smd['last']:
-                        smd['last'] = row[0]
-                    if row[0] < smd['first']:
-                        smd['first'] = row[0]
-                else:
-                    stats[row[1]][day] = {'rssi': [row[2]], 'first': row[0], 'last': row[0]}
+                # WARNING: this is copy-pasted from stats.py
+                stats = {}
+                for row in cur.fetchall():
+                    if row[1] not in list(stats.keys()):
+                        stats[row[1]] = {'ssids': set()}
+                    stats[row[1]]['ssids'].add(row[3])
+                    day = time.strftime('%Y%m%d', time.localtime(row[0]))
+                    if day in stats[row[1]]:
+                        smd = stats[row[1]][day]
+                        smd['rssi'].append(row[2])
+                        if row[0] > smd['last']:
+                            smd['last'] = row[0]
+                        if row[0] < smd['first']:
+                            smd['first'] = row[0]
+                    else:
+                        stats[row[1]][day] = {'rssi': [row[2]], 'first': row[0], 'last': row[0]}
 
-            data = []
-            for mac in list(stats.keys()):
-                md = []
-                for d in sorted(stats[mac].keys()):
-                    if d == 'ssids':
-                        continue
-                    rssi = stats[mac][d]['rssi']
-                    md.append({'day':d, 'count':len(rssi),
-                        'last': int(stats[mac][d]['last']*1000), 'first': int(stats[mac][d]['first']*1000),
-                        'min': min(rssi), 'max': max(rssi), 'avg': sum(rssi)//len(rssi), 'median': median(rssi)})
-                ssids = list(stats[mac]['ssids'])
-                if '' in ssids:
-                    ssids.remove('')
-                data.append({'mac': mac, 'days': md, 'ssids': ssids})
-            return jsonify(data)
+                data = []
+                for mac in list(stats.keys()):
+                    md = []
+                    for d in sorted(stats[mac].keys()):
+                        if d == 'ssids':
+                            continue
+                        rssi = stats[mac][d]['rssi']
+                        md.append({'day':d, 'count':len(rssi),
+                            'last': int(stats[mac][d]['last']*1000), 'first': int(stats[mac][d]['first']*1000),
+                            'min': min(rssi), 'max': max(rssi), 'avg': sum(rssi)//len(rssi), 'median': median(rssi)})
+                    ssids = list(stats[mac]['ssids'])
+                    if '' in ssids:
+                        ssids.remove('')
+                    data.append({'mac': mac, 'days': md, 'ssids': ssids})
+                return jsonify(data)
 
     @app.route('/api/stats/timestamp')
     @cache.cached(timeout=60)

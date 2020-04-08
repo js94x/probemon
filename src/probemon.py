@@ -15,7 +15,7 @@ import threading
 
 NAME = 'probemon'
 DESCRIPTION = "a command line tool for logging 802.11 probe requests"
-VERSION = '0.7.1'
+VERSION = '0.7.2'
 
 MANUF_FILE = './manuf'
 MAX_QUEUE_LENGTH = 50

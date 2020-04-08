@@ -103,6 +103,7 @@ def main():
     parser.add_argument('-a', '--after', help='filter before this timestamp')
     parser.add_argument('-b', '--before', help='filter after this timestamp')
     parser.add_argument('-d', '--day', action='store_true', help='filter only for the past day')
+    parser.add_argument('--dont-use-stats-table', action='store_true', default=False, help="don't use the stats table even if it's present")
     parser.add_argument('--day-by-day', action='store_true', help='day by day stats for given mac')
     parser.add_argument('--db', default='probemon.db', help='file name of database')
     parser.add_argument('--list-mac-ssids', action='store_true', help='list ssid with mac that probed for it')
@@ -151,6 +152,13 @@ def main():
     c.execute(sql)
     conn.commit()
 
+    try:
+        c.execute('select count(*) from sqlite_master where type=? and name=?', ('table', 'stats'))
+    except sqlite3.OperationalError as e:
+        print(f'Error: {e}', file=sys.stderr)
+        sys.exit(-1)
+    is_stats_table_available = c.fetchone()[0] == 1
+
     if args.ssid:
         c.execute('select id from ssid where name=?', (args.ssid,))
         ssid = c.fetchone()
@@ -173,12 +181,68 @@ def main():
         conn.close()
         return
 
+    if is_stats_table_available and not args.dont_use_stats_table:
+        print(':: Using the stats table')
+        args.mac = [f'{m}%' for m in args.mac]
+        sql = '''select mac.id, address, vendor.name from mac
+            inner join vendor on vendor.id=mac.vendor
+            where address like ?'''
+        if len(args.mac) > 1:
+            sql += ' or ' + 'or '.join((len(args.mac)-1)*['address like ?'])
+        c.execute(sql, tuple(args.mac))
+        macs = {}
+        for i, a, v in c.fetchall():
+            macs[i] = {'address': a, 'vendor': v, 'ssids': set(), 'count': [],
+                'min': 99, 'max': -999, 'avg': [], 'med': [], 'first':'9999', 'last': ''}
+        if args.day_by_day:
+            for i in list(macs.keys()):
+                sql = 'select * from stats where mac_id=?'
+                c.execute(sql, (i,))
+                print(f'MAC: {macs[i]["address"]}, VENDOR: {macs[i]["vendor"]}')
+                for _, d, first, last, count, rmin, rmax, ravg, rmed, ssid in c.fetchall():
+                    print(f'  {d}: [{first}-{last}]', end=' ')
+                    print(f'  RSSI: #: {count:4d}, min: {rmin:3d}, max: {rmax:3d}, avg: {ravg:3d}, median: {rmed:3d}')
+            conn.close()
+            return
+
+        if not args.log and not args.list_mac_ssids:
+            for i in list(macs.keys()):
+                sql = 'select * from stats where mac_id=?'
+                c.execute(sql, (i,))
+                m = macs[i]
+                for _, d, first, last, count, rmin, rmax, ravg, rmed, ssid in c.fetchall():
+                    first = f'{d}T{first}'
+                    last = f'{d}T{last}'
+                    if first < m['first']:
+                        m['first'] = first
+                    if last > m['last']:
+                        m['last'] = last
+                    m['count'].append(count)
+                    m['ssids'] = m['ssids'].union(ssid.split(','))
+                    if rmin < m['min']:
+                        m['min'] = rmin
+                    if rmax > m['max'] and rmax != 0:
+                        m['max'] = rmax
+                    m['avg'].append(ravg)
+                    m['med'].append(rmed)
+                laa = ' (LAA)' if is_local_bit_set(m['address']) else ''
+                print(f'MAC: {m["address"]}{laa}, VENDOR: {m["vendor"]}')
+                if '' in m['ssids']:
+                    m['ssids'].remove('')
+                print(f'  SSIDs: {",".join(sorted(list(m["ssids"])))}')
+                avg = sum([a*b for a,b in zip(m['avg'], m['count'])])//sum(m['count'])
+                med = sum([a*b for a,b in zip(m['med'], m['count'])])//sum(m['count'])
+                print(f'  RSSI: #: {sum(m["count"]):4d}, min: {m["min"]:3d}, max: {m["max"]:3d}, avg: {avg:3d}, median: {med:3d}')
+                print(f'  First seen at {m["first"]} and last seen at {m["last"]}')
+            conn.close()
+            return
+
     sql, sql_args = build_sql_query(after, before, args.mac, args.rssi, args.zero, args.day)
     try:
         c.execute(sql, sql_args)
     except sqlite3.OperationalError as e:
-        time.sleep(2)
-        c.execute(sql, sql_args)
+        print('Error: {e}', file=sys.stderr)
+        sys.exit(-1)
 
     if args.log:
         # simply output each log entry to stdout
@@ -202,6 +266,8 @@ def main():
         return
 
     if args.day_by_day:
+        if not args.dont_use_stats_table:
+            print(':: You can speed up day-by-day look-up by using consolidate-stats.py')
         # gather stats day by day for args.mac
         stats = {}
         for row in c.fetchall():
@@ -250,6 +316,9 @@ def main():
 
         conn.close()
         return
+
+    if not args.dont_use_stats_table:
+        print(':: You can speed up query by using consolidate-stats.py')
     # gather stats about each mac
     macs = {}
     for row in c.fetchall():

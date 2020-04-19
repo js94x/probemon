@@ -7,7 +7,7 @@
 # once initialized with --init
 
 import argparse
-from datetime import timedelta, date
+from datetime import timedelta, date, datetime
 import time
 import sqlite3
 import sys

@@ -181,7 +181,7 @@ def main():
         conn.close()
         return
 
-    if is_stats_table_available and not args.dont_use_stats_table:
+    if is_stats_table_available and not args.dont_use_stats_table and not args.log and not args.list_mac_ssids:
         print(':: Using the stats table')
         args.mac = [f'{m}%' for m in args.mac]
         sql = '''select mac.id, address, vendor.name from mac

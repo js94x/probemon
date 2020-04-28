@@ -9,3 +9,4 @@ node_modules/
 package-lock.json
 static/js/probe_pb.js
 lost+found/
+src/c.d/build

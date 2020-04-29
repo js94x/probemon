@@ -399,6 +399,51 @@ order by date desc limit 100'''
         resp.headers['Content-Type'] = 'text/plain'
         return resp
 
+    @app.route('/api/logs/raw')
+    def raw():
+        day = request.args.get('day')
+        hour = request.args.get('hour')
+        if day is None or hour is None:
+            return 'missing parameter', 422
+        try:
+            hour = int(hour)
+        except ValueError as v:
+            return 'invalid parameter', 400
+
+        c = get_db().cursor()
+        # return the raw log with id to avoid too much repeated strings
+        start = time.mktime(time.strptime(f'{day}T{hour:02d}:00:00', '%Y-%m-%dT%H:%M:%S'))
+        eday = f'{day}T23:59:59' if hour+1 == 24 else f'{day}T{hour+1}:00:00'
+        end = time.mktime(time.strptime(eday, '%Y-%m-%dT%H:%M:%S'))
+        sql = 'select * from probemon where date >= ? and date <= ? order by date asc;'
+        c.execute(sql, (start, end))
+        rawlogs = []
+        for row in c.fetchall():
+            rawlogs.append(row)
+
+        macs = set(m[1] for m in rawlogs)
+        mac_ids = {}
+        args_list = ','.join(["?"]*len(macs))
+        sql = f'''select mac.id,address,vendor.name from mac
+            inner join vendor on vendor.id=mac.vendor
+            where mac.id in ({args_list});'''
+        c.execute(sql, tuple(macs))
+        del macs
+        for row in c.fetchall():
+            mac_ids[row[0]] = (row[1], row[2])
+
+        ssids = set(m[2] for m in rawlogs)
+        ssid_ids = {}
+        args_list = ','.join(["?"]*len(ssids))
+        sql = f'select id,name from ssid where id in ({args_list});'
+        c.execute(sql, tuple(ssids))
+        del ssids
+        for row in c.fetchall():
+            ssid_ids[row[0]] = row[1]
+
+        data = {'ssids': ssid_ids, 'macs':mac_ids, 'logs':rawlogs}
+        return jsonify(data)
+
     @app.route('/robots.txt')
     def robot():
         return app.send_static_file('robots.txt')

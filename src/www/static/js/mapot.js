@@ -484,6 +484,54 @@ $(function() {
     $('.carousel').carousel(0);
   });
 
+  $('#rawlogs').click(function() {
+    // Generate link to collapse pre block
+    var html = '';
+    for (let i=0; i<24; i++) {
+      var start = String(i).padStart(2, '0')+':00';
+      var end = String(i+1).padStart(2, '0')+':00';
+      if (end == '24:00') end = '00:00';
+      html += `<a href="#rawlog-`+i+`-collapse" id="rawlog-`+i+`-link" data-toggle="collapse">Hour `+start+` to `+end+`</a>
+              <div class="collapse" id="rawlog-`+i+`-collapse">
+                <table class="table table-sm" id="rawlog-`+i+`-table" class="rawlog-table">
+                  <tr><td>Loading...</td></tr>
+                </table>
+              </div><br>\n`;
+    }
+    $('#rawlogs-body').empty().append(html);
+    var chosen_date = moment($('#dp').datepicker('getDate')).format('YYYY-MM-DD');
+    $('#rawlogs-day').text(chosen_date);
+    $('#rawlog-modal').modal('show');
+
+    $('[id^="rawlog-"][id$="-link"]').on('click', function(e) {
+      var chosen_date = moment($('#dp').datepicker('getDate')).format('YYYY-MM-DD');
+      var hour = e.target.id.replace('rawlog-', '').replace('-link', '');
+      fetch('/api/logs/raw?day='+chosen_date+'&hour='+hour).then(function(resp) {
+        if (resp.ok) {
+          return resp.json();
+        }
+      }).then(function(data) {
+        var html = '';
+        if (data['logs'].length != 0) {
+          for (let i=0; i<data['logs'].length; i++) {
+            var ts = moment.unix(data['logs'][i][0]).format('HH:mm:ss');
+            var elmt = data['logs'][i];
+            var mac = data['macs'][elmt[1]][0];
+            var is_laa = Boolean(parseInt(mac.substring(0, 2), 16) & 0x2);
+            html += '<tr><td>'+ts+'</td><td '+(is_laa? 'class="laa" ':'')+'title="'+data['macs'][elmt[1]][1]+'">'+mac;
+            html += '</td><td>'+data['ssids'][elmt[2]]+'</td><td>'+elmt[3]+'</td></tr>';
+          }
+        } else {
+          html = '<tr><td>No probe requests logged</td></tr>';
+        }
+        $('#rawlog-'+hour+'-table').empty().html(html);
+      }).catch(function(error) {
+
+      });
+    });
+
+  });
+
   // refresh chart when window is visible again
   $(document).on('visibilitychange', function() {
     if (document.visibilityState == "visible") {

@@ -509,6 +509,8 @@ $(function() {
       fetch('/api/logs/raw?day='+chosen_date+'&hour='+hour).then(function(resp) {
         if (resp.ok) {
           return resp.json();
+        } else {
+          $('#rawlog-'+hour+'-table').empty().html('<tr><td>An error happened when loading data</td></tr>');
         }
       }).then(function(data) {
         var html = '';
@@ -526,7 +528,7 @@ $(function() {
         }
         $('#rawlog-'+hour+'-table').empty().html(html);
       }).catch(function(error) {
-
+        $('#rawlog-'+hour+'-table').empty().html('<tr><td>An error happened when loading data</td></tr>');
       });
     });
 

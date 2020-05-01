@@ -109,6 +109,10 @@ char *probereq_to_str(probereq_t pr)
 
   strftime(datetime, 20, "%Y-%m-%d %H:%M:%S", localtime(&pr.ts));
 
+  char *first = strndup(pr.mac, 2);
+  bool is_laa = strtol(first, NULL, 16) & 0x2;
+  free(first);
+
   // cut or pad vendor string
   if (strlen(pr.vendor) >= MAX_VENDOR_LENGTH) {
       strncpy(vendor, pr.vendor, MAX_VENDOR_LENGTH-1);
@@ -144,6 +148,9 @@ char *probereq_to_str(probereq_t pr)
   strcat(tmp, datetime);
   strcat(tmp, "\t");
   strcat(tmp, pr.mac);
+  if (is_laa) {
+    strcat(tmp, " (LAA)");
+  }
   strcat(tmp, "\t");
   strcat(tmp, vendor);
   strcat(tmp, "\t");

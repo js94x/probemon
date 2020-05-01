@@ -8,11 +8,23 @@ from pathlib import Path
 import tempfile
 import atexit
 import probe_pb2
+from yaml import load as yaml_load
+try:
+    from yaml import CLoader as Loader
+except ImportError:
+    from yaml import Loader
 
 sys.path.insert(0, '..')
 from stats import is_local_bit_set, build_sql_query, median
-import config
-config.MERGED = tuple(m[:8] for m in config.MERGED)
+# read config variable from config.yaml file
+try:
+    with open('config.yaml', 'r') as f:
+        cfg_doc = f.read()
+    config = yaml_load(cfg_doc, Loader=Loader)
+    config['merged'] = tuple(m[:8] for m in config['merged'])
+except FileNotFoundError as e:
+    print('Warning: config.yaml not found, skipping', file=sys.stderr)
+    config = {'knownmac': tuple(), 'merged': tuple()}
 
 CWD = Path(__file__).resolve().parent
 DATABASE = Path.joinpath(CWD, 'probemon.db')
@@ -306,9 +318,9 @@ def create_app():
         data = []
         # recollection
         for m in ts.keys():
-            if m == 'LAA' or m.startswith(config.MERGED):
+            if m == 'LAA' or m.startswith(config['merged']):
                 continue # will deal with them later
-            known = m in config.KNOWNMAC
+            known = m in config['knownmac']
             ssids = list(set(f[2] for f in ts[m]))
             t = {'mac':m, 'known': known, 'vendor': vendor[m], 'ssids': ssids,
                 'probereq': [{'ts': int(f[0]*1000), 'rssi':f[1], 'ssid': ssids.index(f[2])} for f in ts[m]]}
@@ -322,7 +334,7 @@ def create_app():
                 'probereq': [{'ts': int(f[0]*1000), 'rssi':f[1], 'ssid': ssids.index(f[2])} for f in ts['LAA']]}
             data.append(t)
         # MERGED
-        for m in config.MERGED:
+        for m in config['merged']:
             mm = [ma for ma in ts.keys() if ma.startswith(m)]
             p = []
             for n in mm:

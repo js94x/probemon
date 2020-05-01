@@ -94,7 +94,7 @@ optional arguments:
 ```
 
 * `-d/--days` specify the number of days that will lapse the chart from 00:00 to 00:00.
-* `-k/--knowmac` (can be repeated) to specify known mac address that will be colored in red (overwrite mac in config.py).
+* `-k/--knowmac` (can be repeated) to specify known mac address that will be colored in red (overwrite mac in config.yaml).
 * `-p/--privacy` switch merges all Locally Administered Addresses (MAC) into a single plot. Whether this option is used or not, they are colored in grey.
 * `-m/--min` allows specifying the minimum of probe requests that are needed to be displayed on the chart.
 * `-r/--rssi` allows filtering probe request based their RSSI value

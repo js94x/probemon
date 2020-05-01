@@ -5,6 +5,11 @@ import argparse
 import time
 import sys
 import os.path
+from yaml import load as yaml_load
+try:
+    from yaml import CLoader as Loader
+except ImportError:
+    from yaml import Loader
 
 # avoid IOError when quitting less
 from signal import signal, SIGPIPE, SIG_DFL
@@ -14,8 +19,14 @@ NUMOFSECSINADAY = 60*60*24
 MAX_VENDOR_LENGTH = 25
 MAX_SSID_LENGTH = 15
 
-# read config variable from config.py file
-import config
+# read config variable from config.yaml file
+try:
+    with open('config.yaml', 'r') as f:
+        cfg_doc = f.read()
+    config = yaml_load(cfg_doc, Loader=Loader)
+except FileNotFoundError as e:
+    print('Warning: config.yaml not found, skipping', file=sys.stderr)
+    config = {'ignored': tuple()}
 
 def is_local_bit_set(mac):
     byte = mac.split(':')
@@ -90,10 +101,10 @@ def build_sql_query(after, before, macs, rssi, zero, day):
     if zero:
         sql_where_clause = add_arg(sql_where_clause, 'and', 'rssi != 0')
 
-    if len(config.IGNORED) > 0:
-        arg_list = ','.join(['?']*len(config.IGNORED))
+    if len(config['ignored']) > 0:
+        arg_list = ','.join(['?']*len(config['ignored']))
         sql_where_clause = add_arg(sql_where_clause, 'and', 'mac.address not in (%s)' % (arg_list,))
-        sql_args.extend(config.IGNORED)
+        sql_args.extend(config['ignored'])
 
     sql = '%s where %s %s' % (sql_head, sql_where_clause, sql_tail)
     return sql, sql_args

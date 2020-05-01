@@ -16,6 +16,11 @@ import os
 import re
 from scapy.all import sniff
 from scapy.layers import dot11
+from yaml import load as yaml_load
+try:
+    from yaml import CLoader as Loader
+except ImportError:
+    from yaml import Loader
 
 IS_WINDOW_OPENED = False
 NUMOFSECSINADAY = 60*60*24
@@ -23,9 +28,11 @@ NUMOFSECSINADAY = 60*60*24
 COLORS = ['tab:blue', 'tab:orange', 'tab:green', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:olive', 'tab:cyan']
 REFRESH_TIME = 60 # in seconds
 
-# read config variable from config.py file
-import config
-config.MERGED = (m[:8] for m in config.MERGED)
+# read config variable from config.yaml file
+with open('config.yaml', 'r') as f:
+    cfg_doc = f.read()
+config = yaml_load(cfg_doc, Loader=Loader)
+config['merged'] = (m[:8] for m in config['merged'])
 
 # draws a rectangle as custom legend handler
 class MyLine2DHandler(object):
@@ -50,7 +57,7 @@ def get_data(args):
         else:
             packets = sniff(offline=args.pcap, verbose=0)
         for packet in packets:
-            if packet.addr2 in config.IGNORED:
+            if packet.addr2 in config['ignored']:
                 continue
 
             if packet.addr2 in ts:
@@ -117,7 +124,7 @@ def get_data(args):
 
         # keep only the data between 2 timestamps ignoring IGNORED macs with rssi
         # greater than the min value
-        arg_list = ','.join(['?']*len(config.IGNORED))
+        arg_list = ','.join(['?']*len(config['ignored']))
         sql = '''select date,mac.address,rssi from probemon
             inner join mac on mac.id=probemon.mac
             where date <= ? and date >= ?
@@ -125,10 +132,10 @@ def get_data(args):
             and rssi > ?
             order by date''' % (arg_list,)
         try:
-            c.execute(sql, (args.end_time, args.start_time) + config.IGNORED + (args.rssi,))
+            c.execute(sql, (args.end_time, args.start_time) + tuple(config['ignored']) + (args.rssi,))
         except sqlite3.OperationalError as e:
             time.sleep(2)
-            c.execute(sql, (args.end_time, args.start_time) + config.IGNORED + (args.rssi,))
+            c.execute(sql, (args.end_time, args.start_time) + tuple(config['ignored']) + (args.rssi,))
         for row in c.fetchall():
             if row[1] in ts:
                 ts[row[1]].append(row[0])
@@ -177,7 +184,7 @@ def get_data(args):
             times.append(sorted(t))
 
     # merge all same vendor mac into one plot for a virtual MAC called 'OUI'
-    for mv in config.MERGED:
+    for mv in config['merged']:
         indx = [i for i,m in enumerate(macs) if m[:8] == mv]
         if len(indx) > 0:
             t = []
@@ -310,8 +317,8 @@ def plot_data(macs, times, args):
 
     # and tada !
     if args.image:
-        fig.set_size_inches(config.HEIGHT/config.DPI, config.WIDTH/config.DPI)
-        fig.savefig(args.image, dpi=config.DPI)
+        fig.set_size_inches(config['height']/config['dpi'], config['width']/config['dpi'])
+        fig.savefig(args.image, dpi=config['dpi'])
         #fig.savefig('test.svg', format='svg')
     else:
         if IS_WINDOW_OPENED:
@@ -369,7 +376,7 @@ def main():
         sys.exit(-1)
 
     if args.knownmac is None:
-        args.knownmac = config.KNOWNMAC
+        args.knownmac = config['knownmac']
 
     if args.pcap and not os.path.exists(args.pcap):
         print(f'Error: pcap file not found {args.pcap}', file=sys.stderr)

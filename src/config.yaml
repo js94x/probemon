@@ -1,0 +1,13 @@
+knownmac: # will be highlighted in red in plots
+  - xx:xx:xx:xx:xx:xx # example mac address
+  - xx:xx:xx:yy:yy:yy
+
+ignored: # list of your devices for example
+  - yy:yy:yy:yy:yy:yy
+
+merged: # list of partial mac addresses for devices using randomization
+  - 'zz:zz:zz:*'
+
+height: 1366 # in pixels
+width: 768
+dpi: 100

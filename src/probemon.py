@@ -12,6 +12,11 @@ from lru import LRU
 import signal
 import struct
 import threading
+from yaml import load as yaml_load
+try:
+    from yaml import CLoader as Loader
+except ImportError:
+    from yaml import Loader
 
 NAME = 'probemon'
 DESCRIPTION = "a command line tool for logging 802.11 probe requests"
@@ -23,8 +28,10 @@ MAX_ELAPSED_TIME = 60 # seconds
 MAX_VENDOR_LENGTH = 25
 MAX_SSID_LENGTH = 15
 
-# read config variable from config.py file
-import config
+# read config variable from config.yaml file
+with open('config.yaml', 'r') as f:
+    cfg_doc = f.read()
+config = yaml_load(cfg_doc, Loader=Loader)
 
 class Colors:
     red = '\033[31m'
@@ -44,7 +51,7 @@ class MyCache:
         self.vendor = LRU(size)
 
 def print_fields(fields):
-    if fields[1] in config.KNOWNMAC:
+    if fields[1] in config['knownmac']:
         fields[1] = '%s%s%s%s' % (Colors.bold, Colors.red, fields[1], Colors.endc)
     # convert time to iso
     fields[0] = time.strftime('%Y-%m-%dT%H:%M:%S', time.localtime(fields[0  ]))
@@ -291,7 +298,7 @@ def main():
     print(f':: Started listening to probe requests on channel {args.channel} on interface {args.interface}')
     print('Hit CTRL-C to exit')
     try:
-        sniff(iface=args.interface, prn=build_packet_cb(config.IGNORED),
+        sniff(iface=args.interface, prn=build_packet_cb(config['ignored']),
             store=0, filter='wlan type mgt subtype probe-req', stop_filter=check_event)
     except Scapy_Exception as se:
         print(f'Error: {se}', file=sys.stderr)
@@ -323,7 +330,7 @@ if __name__ == '__main__':
             sys.exit(-1)
 
         if args.ignore is not None:
-            config.IGNORED = args.ignore
+            config['ignored'] = args.ignore
 
         # only import scapy here to avoid delay if error in argument parsing
         print('Loading scapy...')

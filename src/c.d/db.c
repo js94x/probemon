@@ -6,7 +6,7 @@
 #include <libgen.h>
 
 #include "logger_thread.h"
-#include "parsers.h"
+#include "manuf.h"
 
 static inline int do_nothing(void *not_used, int argc, char **argv, char **col_name)
 {

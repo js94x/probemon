@@ -16,6 +16,7 @@ worker thread that will process the queue filled by process_packet()
 #include "queue.h"
 #include "logger_thread.h"
 #include "db.h"
+#include "manuf.h"
 
 pthread_cond_t cv;
 pthread_mutex_t mutex_queue;
@@ -23,6 +24,9 @@ extern queue_t *queue;
 sqlite3 *db;
 struct timespec start_ts_cache;
 bool option_stdout;
+
+manuf_t *ouidb;
+size_t ouidb_size;
 
 void free_probereq(probereq_t *pr)
 {
@@ -62,8 +66,13 @@ void *process_queue(void *args)
     // process the array after having unlock the queue
     for (int j = 0; j < qs; j++) {
       pr = prs[j];
-      // TODO: look for vendor string in manuf
-      pr->vendor = strdup("UNKNOWN");
+      // look for vendor string in manuf
+      int indx = lookup_oui(pr->mac, ouidb, ouidb_size);
+      if (indx >= 0 && ouidb[indx].long_oui) {
+        pr->vendor = strdup(ouidb[indx].long_oui);
+      } else {
+        pr->vendor = strdup("UNKNOWN");
+      }
       insert_probereq(*pr, db);
       if (option_stdout) {
         char *pr_str = probereq_to_str(*pr);

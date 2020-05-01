@@ -14,5 +14,4 @@ extern void parse_probereq_frame(const u_char *packet, uint32_t header_len,
 
 char *probereq_to_str(probereq_t pr);
 
-char *str_replace(const char *orig, const char *rep, const char *with);
 #endif

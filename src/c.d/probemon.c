@@ -16,6 +16,7 @@
 #include "parsers.h"
 #include "logger_thread.h"
 #include "db.h"
+#include "manuf.h"
 
 #define NAME "probemon"
 #define VERSION "0.1"
@@ -23,7 +24,9 @@
 #define SNAP_LEN 512
 #define MAX_QUEUE_SIZE 128
 
-#define DB_NAME "probemon.db"
+#define DB_NAME "./probemon.db"
+#define MANUF_NAME "./manuf"
+#define CONFIG_NAME "./config.yaml"
 
 pcap_t *handle;                 // global, to use it in sigint_handler
 queue_t *queue;                 // queue to hold parsed ap infos
@@ -36,6 +39,9 @@ bool option_stdout;
 
 sqlite3 *db = NULL;
 int ret = 0;
+
+size_t ouidb_size;
+manuf_t *ouidb;
 
 void sigint_handler(int s)
 {
@@ -90,6 +96,7 @@ void usage(void)
   printf("  -i IFACE        interface to use\n"
          "  -c CHANNEL      channel to sniff on\n"
          "  -d FILENAME     explicitly set the db filename\n"
+         "  -m MANUF_NAMENAME    path to manuf file\n"
          "  -s              also log probe requests to stdout\n"
        );
 }
@@ -98,13 +105,15 @@ int main(int argc, char *argv[])
 {
   char *iface = NULL;
   char *option_channel = NULL;
-  char *option_file_name = NULL;
-  char *file_name = NULL;
+  char *option_db_name = NULL;
+  char *option_manuf_name = NULL;
+  char *db_name = NULL;
+  char *manuf_name = NULL;
   int opt;
   uint8_t channel;
 
   option_stdout = false;
-  while ((opt = getopt(argc, argv, "c:hi:d:sV")) != -1) {
+  while ((opt = getopt(argc, argv, "c:hi:d:m:sV")) != -1) {
     switch (opt) {
     case 'h':
       usage();
@@ -117,7 +126,10 @@ int main(int argc, char *argv[])
       option_channel = optarg;
       break;
     case 'd':
-      option_file_name = optarg;
+      option_db_name = optarg;
+      break;
+    case 'm':
+      option_manuf_name = optarg;
       break;
     case 's':
       option_stdout = true;
@@ -169,16 +181,25 @@ int main(int argc, char *argv[])
     exit(EXIT_FAILURE);
   }
 
-  if (option_file_name == NULL) {
-    file_name = malloc((strlen(DB_NAME)+1)*sizeof(char));
-    strncpy(file_name, DB_NAME, strlen(DB_NAME) +1);
+  if (option_manuf_name == NULL) {
+    manuf_name = strdup(MANUF_NAME);
   } else {
-    file_name = malloc(strlen(option_file_name) + 1);
-    strncpy(file_name, option_file_name, strlen(option_file_name)+1);
+    manuf_name = strdup(option_manuf_name);
+  }
+  // look for manuf file and parse it into memory
+  if (access(manuf_name, F_OK) == -1 ) {
+    fprintf(stderr, "Error: can't find manuf file %s\n", manuf_name);
+    exit(EXIT_FAILURE);
+  }
+  printf(":: Parsing manuf file...\n");
+  fflush(stdout);
+  ouidb = parse_manuf_file(manuf_name, &ouidb_size);
+  if (ouidb == NULL) {
+    fprintf(stderr, "Error: can't parse manuf file\n");
+    exit(EXIT_FAILURE);
   }
 
   char errbuf[PCAP_ERRBUF_SIZE];
-
   // just check if iface is in the list of known devices
   pcap_if_t *devs = NULL;
   if (pcap_findalldevs(&devs, errbuf) == 0) {
@@ -277,15 +298,23 @@ int main(int argc, char *argv[])
 
   clock_gettime(CLOCK_MONOTONIC, &start_ts_queue);
 
-  if (init_probemon_db(file_name, &db) != 0) {
-    fprintf(stderr, "Error: can't initialize sqlite3 db %s\n", file_name);
+  if (option_db_name == NULL) {
+    db_name = strdup(DB_NAME);
+  } else {
+    db_name = strdup(option_db_name);
+  }
+
+  if (init_probemon_db(db_name, &db) != 0) {
+    fprintf(stderr, "Error: can't initialize sqlite3 db %s\n", db_name);
     goto logger_failure;
   }
   begin_txn(db);
 
   // we have to cheat a little and print the message before pcap_loop
-  printf(":: Started sniffing probe requests with %s on channel %d, writing to %s\n", iface, channel, file_name);
+  printf(":: Started sniffing probe requests with %s on channel %d, writing to %s\n", iface, channel, db_name);
   printf("Hit CTRL+C to quit\n");
+  fflush(stdout);
+
   int err;
   if ((err = pcap_loop(handle, -1, (pcap_handler) process_packet, NULL))) {
     if (err == PCAP_ERROR) {
@@ -317,7 +346,7 @@ logger_failure:
 handle_failure:
   pcap_close(handle);
 
-  free(file_name);
+  free(db_name);
 
   return ret;
 }

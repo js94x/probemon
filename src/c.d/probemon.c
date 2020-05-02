@@ -17,6 +17,7 @@
 #include "logger_thread.h"
 #include "db.h"
 #include "manuf.h"
+#include "config_yaml.h"
 
 #define NAME "probemon"
 #define VERSION "0.1"
@@ -42,6 +43,7 @@ int ret = 0;
 
 size_t ouidb_size;
 manuf_t *ouidb;
+uint64_t *ignored;
 
 void sigint_handler(int s)
 {
@@ -198,6 +200,10 @@ int main(int argc, char *argv[])
     fprintf(stderr, "Error: can't parse manuf file\n");
     exit(EXIT_FAILURE);
   }
+
+  int ignored_count = 0;
+  char **entries = parse_config_yaml(CONFIG_NAME, "ignored", &ignored_count);
+  ignored = parse_ignored_entries(entries, ignored_count);
 
   char errbuf[PCAP_ERRBUF_SIZE];
   // just check if iface is in the list of known devices

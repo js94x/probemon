@@ -17,6 +17,7 @@ worker thread that will process the queue filled by process_packet()
 #include "logger_thread.h"
 #include "db.h"
 #include "manuf.h"
+#include "config_yaml.h"
 
 pthread_cond_t cv;
 pthread_mutex_t mutex_queue;
@@ -27,6 +28,9 @@ bool option_stdout;
 
 manuf_t *ouidb;
 size_t ouidb_size;
+
+uint64_t *ignored;
+int ignored_count;
 
 void free_probereq(probereq_t *pr)
 {
@@ -73,11 +77,18 @@ void *process_queue(void *args)
       } else {
         pr->vendor = strdup("UNKNOWN");
       }
-      insert_probereq(*pr, db);
-      if (option_stdout) {
-        char *pr_str = probereq_to_str(*pr);
-        printf("%s\n", pr_str);
-        free(pr_str);
+      // check if mac is not in ignored list
+      char *tmp = str_replace(pr->mac, ":", "");
+      uint64_t mac_number = strtol(tmp, NULL, 16);
+      free(tmp);
+      uint64_t *res = bsearch(&mac_number, ignored, sizeof(uint64_t), ignored_count, cmp_uint64_t);
+      if (res == NULL) {
+        insert_probereq(*pr, db);
+        if (option_stdout) {
+          char *pr_str = probereq_to_str(*pr);
+          printf("%s\n", pr_str);
+          free(pr_str);
+        }
       }
     }
     if (option_stdout) {

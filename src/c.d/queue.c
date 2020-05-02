@@ -41,7 +41,6 @@ int enqueue(queue_t * q, void *value)
     return q->size;
   }
 
-
   q->tail->next = node;
   q->tail = node;
   q->size += 1;

@@ -33,6 +33,8 @@ The complete usage:
   - libyaml
   - and on the `iw` executable
 
+This also relies on a *manuf* file; it can be found in the *wireshark* package under `/usr/share/wireshark/manuf` or you can directly download a fresh version at https://code.wireshark.org/review/gitweb?p=wireshark.git;a=blob_plain;f=manuf;hb=HEAD
+
 ### Examples
 On Ubuntu 18.04 or Raspbian, one needs to run the following command to install libraries and headers:
 

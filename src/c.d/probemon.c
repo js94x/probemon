@@ -163,27 +163,6 @@ int main(int argc, char *argv[])
     channel = (uint8_t)strtol(option_channel, NULL, 10);
   }
 
-  // look up for iw in system
-  char *iw;
-  if (access("/sbin/iw", F_OK) != -1) {
-    iw = strdup("/sbin/iw");
-  } else if (access("/usr/sbin/iw", F_OK) != -1) {
-    iw = strdup("/usr/sbin/iw");
-  } else if (access("/usr/bin/iw", F_OK) != -1) {
-    iw = strdup("/usr/bin/iw");
-  } else {
-    fprintf(stderr, "Error: couldn't find iw on system (in /sbin, /usr/sbin, /usr/bin)");
-    exit(EXIT_FAILURE);
-  }
-  // change the channel to listen on
-  char cmd[128];
-  snprintf(cmd, 128, "%s dev %s set channel %d", iw, iface, channel);
-  free(iw);
-  if (system(cmd)) {
-    fprintf(stderr, "Error: can't change channel on %s with iw to channel %d", iface, channel);
-    exit(EXIT_FAILURE);
-  }
-
   if (option_manuf_name == NULL) {
     manuf_name = strdup(MANUF_NAME);
   } else {
@@ -230,6 +209,28 @@ int main(int argc, char *argv[])
       exit(EXIT_FAILURE);
     }
   }
+
+  // look up for iw in system
+  char *iw;
+  if (access("/sbin/iw", F_OK) != -1) {
+    iw = strdup("/sbin/iw");
+  } else if (access("/usr/sbin/iw", F_OK) != -1) {
+    iw = strdup("/usr/sbin/iw");
+  } else if (access("/usr/bin/iw", F_OK) != -1) {
+    iw = strdup("/usr/bin/iw");
+  } else {
+    fprintf(stderr, "Error: couldn't find iw on system (in /sbin, /usr/sbin, /usr/bin)\n");
+    exit(EXIT_FAILURE);
+  }
+  // change the channel to listen on
+  char cmd[128];
+  snprintf(cmd, 128, "%s dev %s set channel %d", iw, iface, channel);
+  free(iw);
+  if (system(cmd)) {
+    fprintf(stderr, "Error: can't change to channel %d with iw on interface %s\n", channel, iface);
+    exit(EXIT_FAILURE);
+  }
+
   handle = pcap_create(iface, errbuf);
   if (handle == NULL) {
     fprintf(stderr, "Error: unable to create pcap handle: %s\n", errbuf);

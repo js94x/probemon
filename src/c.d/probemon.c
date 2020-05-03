@@ -43,7 +43,7 @@ int ret = 0;
 
 size_t ouidb_size;
 manuf_t *ouidb;
-uint64_t *ignored;
+uint64_t *ignored = NULL;
 
 void sigint_handler(int s)
 {

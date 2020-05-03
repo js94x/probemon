@@ -78,10 +78,13 @@ void *process_queue(void *args)
         pr->vendor = strdup("UNKNOWN");
       }
       // check if mac is not in ignored list
-      char *tmp = str_replace(pr->mac, ":", "");
-      uint64_t mac_number = strtol(tmp, NULL, 16);
-      free(tmp);
-      uint64_t *res = bsearch(&mac_number, ignored, sizeof(uint64_t), ignored_count, cmp_uint64_t);
+      uint64_t *res = NULL;
+      if (ignored != NULL) {
+        char *tmp = str_replace(pr->mac, ":", "");
+        uint64_t mac_number = strtol(tmp, NULL, 16);
+        free(tmp);
+        res = bsearch(&mac_number, ignored, sizeof(uint64_t), ignored_count, cmp_uint64_t);
+      }
       if (res == NULL) {
         insert_probereq(*pr, db);
         if (option_stdout) {

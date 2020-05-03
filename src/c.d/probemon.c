@@ -205,6 +205,10 @@ int main(int argc, char *argv[])
   int ignored_count = 0;
   char **entries = parse_config_yaml(CONFIG_NAME, "ignored", &ignored_count);
   ignored = parse_ignored_entries(entries, ignored_count);
+  for (int i=0; i<ignored_count; i++) {
+    free(entries[i]);
+  }
+  free(entries);
 
   char errbuf[PCAP_ERRBUF_SIZE];
   // just check if iface is in the list of known devices

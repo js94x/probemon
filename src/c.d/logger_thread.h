@@ -9,7 +9,8 @@ struct probereq {
   time_t ts;
   char *mac;
   char *vendor;
-  char *ssid;
+  uint8_t *ssid;
+  uint8_t ssid_len;
   int rssi;
 };
 typedef struct probereq probereq_t;

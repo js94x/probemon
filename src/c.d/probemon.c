@@ -67,8 +67,8 @@ void process_packet(u_char * args, const struct pcap_pkthdr *header, const u_cha
     return;
   }
 
-  char *mac, *ssid;
-  uint8_t ssid_len;
+  char *mac;
+  uint8_t ssid_len, *ssid;
 
   parse_probereq_frame(packet, header->len, offset, &mac, &ssid, &ssid_len);
   lower(mac);
@@ -77,6 +77,7 @@ void process_packet(u_char * args, const struct pcap_pkthdr *header, const u_cha
   pr->ts = header->ts.tv_sec;
   pr->mac = mac;
   pr->ssid = ssid;
+  pr->ssid_len = ssid_len;
   pr->vendor = NULL;
   pr->rssi = rssi;
 
@@ -94,11 +95,11 @@ void process_packet(u_char * args, const struct pcap_pkthdr *header, const u_cha
 
 void usage(void)
 {
-  printf("Usage: probemon -i IFACE -c CHANNEL [-d FILENAME] [-s]\n");
+  printf("Usage: probemon -i IFACE -c CHANNEL [-d DB_NAME] [-m MANUF_NAME] [-s]\n");
   printf("  -i IFACE        interface to use\n"
          "  -c CHANNEL      channel to sniff on\n"
-         "  -d FILENAME     explicitly set the db filename\n"
-         "  -m MANUF_NAMENAME    path to manuf file\n"
+         "  -d DB_NAME      explicitly set the db filename\n"
+         "  -m MANUF_NAME   path to manuf file\n"
          "  -s              also log probe requests to stdout\n"
        );
 }

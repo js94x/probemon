@@ -7,6 +7,8 @@
 
 #include "logger_thread.h"
 #include "manuf.h"
+#include "parsers.h"
+#include "base64.h"
 
 static inline int do_nothing(void *not_used, int argc, char **argv, char **col_name)
 {
@@ -262,7 +264,21 @@ int insert_probereq(probereq_t pr, sqlite3 *db)
 {
   int vendor_id, ssid_id, mac_id, ret;
 
-  ssid_id = insert_ssid(pr.ssid, db);
+  // is ssid a valid utf-8 string
+  char tmp[64];
+  memcpy(tmp, pr.ssid, pr.ssid_len);
+  tmp[pr.ssid_len] = '\0';
+
+  if (!is_utf8(tmp)) {
+    // base64 encode the ssid
+    size_t length;
+    char * b64tmp = base64_encode((unsigned char *)tmp, pr.ssid_len, &length);
+    strcpy(tmp, "b64_");
+    strncat(tmp, b64tmp, length);
+    free(b64tmp);
+  }
+
+  ssid_id = insert_ssid(tmp, db);
   vendor_id = insert_vendor(pr.vendor, db);
   mac_id = insert_mac(pr.mac, vendor_id, db);
 

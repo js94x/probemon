@@ -4,10 +4,12 @@
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
+#include <stdbool.h>
 
 #include "radiotap_iter.h"
 #include "parsers.h"
 #include "logger_thread.h"
+#include "base64.h"
 
 #define MAX_VENDOR_LENGTH 25
 #define MAX_SSID_LENGTH 15
@@ -72,7 +74,7 @@ int8_t parse_radiotap_header(const u_char * packet, uint16_t * freq, int8_t * rs
 }
 
 void parse_probereq_frame(const u_char *packet, uint32_t header_len,
-  int8_t offset, char **mac, char **ssid, uint8_t *ssid_len)
+  int8_t offset, char **mac, uint8_t **ssid, uint8_t *ssid_len)
 {
   *mac = malloc(18 * sizeof(char));
   // parse the probe request frame to look for mac and Information Element we need (ssid)
@@ -91,8 +93,12 @@ void parse_probereq_frame(const u_char *packet, uint32_t header_len,
     if ((ie + ie_len + 2 < packet + header_len)) {     // just double check that this is an IE with length inside packet
       if (*ie == 0) { // SSID aka IE with id 0
         *ssid_len = *(ie + 1);
-        *ssid = malloc((*ssid_len + 1) * sizeof(char));        // AP name
-        snprintf(*ssid, *ssid_len+1, "%s", ie + 2);
+        if (*ssid_len > 32) {
+          fprintf(stderr, "Warning: detected SSID greater than 32 bytes. Cutting it to 32 bytes.");
+          *ssid_len = 32;
+        }
+        *ssid = malloc((*ssid_len) * sizeof(uint8_t));        // AP name
+        memcpy(*ssid, ie+2, *ssid_len);
         break;
       }
     }
@@ -127,16 +133,28 @@ char *probereq_to_str(probereq_t pr)
     }
     vendor[MAX_VENDOR_LENGTH] = '\0';
   }
+  // is ssid a valid utf-8 string
+  memcpy(tmp, pr.ssid, pr.ssid_len);
+  tmp[pr.ssid_len] = '\0';
+
+  if (!is_utf8(tmp)) {
+    // base64 encode the ssid
+    size_t length;
+    char * b64tmp = base64_encode((unsigned char *)tmp, pr.ssid_len, &length);
+    strcpy(tmp, "b64_");
+    strncat(tmp, b64tmp, length);
+    free(b64tmp);
+  }
   // cut or pad ssid string
-  if (strlen(pr.ssid) >= MAX_SSID_LENGTH) {
-      strncpy(ssid, pr.ssid, MAX_SSID_LENGTH-1);
+  if (strlen(tmp) >= MAX_SSID_LENGTH) {
+      strncpy(ssid, tmp, MAX_SSID_LENGTH-1);
       for (int i=MAX_SSID_LENGTH-3; i<MAX_SSID_LENGTH; i++) {
         ssid[i] = '.';
       }
       ssid[MAX_SSID_LENGTH] = '\0';
   } else {
-    strncpy(ssid, pr.ssid, strlen(pr.ssid));
-    for (int i=strlen(pr.ssid); i<MAX_SSID_LENGTH; i++) {
+    strncpy(ssid, tmp, strlen(tmp));
+    for (int i=strlen(tmp); i<MAX_SSID_LENGTH; i++) {
       ssid[i] = ' ';
     }
     ssid[MAX_SSID_LENGTH] = '\0';
@@ -162,4 +180,81 @@ char *probereq_to_str(probereq_t pr)
   strncpy(pr_str, tmp, strlen(tmp)+1);
 
   return pr_str;
+}
+
+// from https://stackoverflow.com/a/1031773/283067
+bool is_utf8(const char * string)
+{
+  if (!string) {
+    return 0;
+  }
+
+  const unsigned char * bytes = (const unsigned char *)string;
+  while(*bytes) {
+    if ( (// ASCII
+      // use bytes[0] <= 0x7F to allow ASCII control characters
+      bytes[0] == 0x09 ||
+      bytes[0] == 0x0A ||
+      bytes[0] == 0x0D ||
+      (0x20 <= bytes[0] && bytes[0] <= 0x7E)
+    ) ) {
+      bytes += 1;
+      continue;
+    }
+
+    if( (// non-overlong 2-byte
+      (0xC2 <= bytes[0] && bytes[0] <= 0xDF) &&
+      (0x80 <= bytes[1] && bytes[1] <= 0xBF)
+    ) ) {
+      bytes += 2;
+      continue;
+    }
+
+    if( (// excluding overlongs
+      bytes[0] == 0xE0 &&
+      (0xA0 <= bytes[1] && bytes[1] <= 0xBF) &&
+      (0x80 <= bytes[2] && bytes[2] <= 0xBF)
+    ) ||
+    (// straight 3-byte
+      ((0xE1 <= bytes[0] && bytes[0] <= 0xEC) ||
+      bytes[0] == 0xEE ||
+      bytes[0] == 0xEF) &&
+      (0x80 <= bytes[1] && bytes[1] <= 0xBF) &&
+      (0x80 <= bytes[2] && bytes[2] <= 0xBF)
+    ) ||
+    (// excluding surrogates
+      bytes[0] == 0xED &&
+      (0x80 <= bytes[1] && bytes[1] <= 0x9F) &&
+      (0x80 <= bytes[2] && bytes[2] <= 0xBF)
+    ) ) {
+      bytes += 3;
+      continue;
+    }
+
+    if( (// planes 1-3
+      bytes[0] == 0xF0 &&
+      (0x90 <= bytes[1] && bytes[1] <= 0xBF) &&
+      (0x80 <= bytes[2] && bytes[2] <= 0xBF) &&
+      (0x80 <= bytes[3] && bytes[3] <= 0xBF)
+    ) ||
+    (// planes 4-15
+      (0xF1 <= bytes[0] && bytes[0] <= 0xF3) &&
+      (0x80 <= bytes[1] && bytes[1] <= 0xBF) &&
+      (0x80 <= bytes[2] && bytes[2] <= 0xBF) &&
+      (0x80 <= bytes[3] && bytes[3] <= 0xBF)
+    ) ||
+    (// plane 16
+      bytes[0] == 0xF4 &&
+      (0x80 <= bytes[1] && bytes[1] <= 0x8F) &&
+      (0x80 <= bytes[2] && bytes[2] <= 0xBF) &&
+      (0x80 <= bytes[3] && bytes[3] <= 0xBF)
+    ) ) {
+      bytes += 4;
+      continue;
+    }
+
+    return 0;
+  }
+
+  return 1;
 }

@@ -1,15 +1,13 @@
 # A C implementation of probemon
 
-This is an impementation of *probemon* in **C**. It does exactly the same thing than *probemon.py* but this is written in C using *libpcap*, *libsqlite3* and *libyaml* libraries. You can except a lower CPU usage, especially on low end hardware like a raspberry pi 0, for example.
+This is an impementation of *probemon* in **C**. It does exactly the same thing than *probemon.py* but this is written in C using *libpcap*, *libsqlite3* and *libyaml* libraries. You can except a lower CPU usage and a lower memory footprint, especially on low end hardware like a raspberry pi 0, for example. Otherwise, it should not matter much.
 
 The main implementation remains the *python* version but that could change in the future.
-
-Note: one minor difference is how we log the SSID name. For the python version, the non utf-8 SSID are base64 encoded while this is not done in the C version.
 
 ## Running
 You run *probemon* with:
 
-    $ sudo probemon -i wlan0mon -c 1
+    $ sudo ./build/probemon -i wlan0mon -c 1
 
 where *wlan0mon* is a wifi interface already put in monitor mode.
 
@@ -19,11 +17,11 @@ You can query as usual the database with the python tool `stats.py` or create ti
 
 The complete usage:
 
-    Usage: probemon -i IFACE -c CHANNEL [-d FILENAME] [-m MANUFNAME] [-s]
-      -c CHANNEL      channel to listen on
+    Usage: probemon -i IFACE -c CHANNEL [-d DB_NAME] [-m MANUF_NAME] [-s]
       -i IFACE        interface to use
-      -d FILENAME     explicitly set the output filename
-      -m MANUFNAME    path to manuf file
+      -c CHANNEL      channel to sniff on
+      -d DB_NAME      explicitly set the db filename
+      -m MANUF_NAME   path to manuf file
       -s              also log probe requests to stdout
 
 ## Dependencies

@@ -341,6 +341,14 @@ int main(int argc, char *argv[])
   commit_txn(db);
   sqlite3_close(db);
 
+  // free up manuf table
+  for (int i=0; i<ouidb_size; i++) {
+    free(ouidb[i].short_oui);
+    free(ouidb[i].long_oui);
+    free(ouidb[i].comment);
+  }
+  free(ouidb);
+
 logger_failure:
   pthread_cancel(logger);
 

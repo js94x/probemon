@@ -206,7 +206,6 @@ def insert_into_db(fields, conn, c):
 
 def build_packet_cb(ignored):
     def packet_callback(packet):
-        now = time.time()
         try:
             rssi = packet.dBm_AntSignal
         except AttributeError as a:
@@ -221,7 +220,7 @@ def build_packet_cb(ignored):
             # encode the SSID in base64 because it will fail
             # to be inserted into the db otherwise
             ssid = 'b64_%s' % base64.b64encode(packet.info).decode()
-        fields = [now, packet.addr2, ssid, rssi]
+        fields = [packet.time, packet.addr2, ssid, rssi]
 
         if packet.addr2 not in ignored:
             with lock:

@@ -10,7 +10,6 @@
 #include <pthread.h>
 #include <time.h>
 #include <sqlite3.h>
-#include <time.h>
 
 #include "queue.h"
 #include "parsers.h"

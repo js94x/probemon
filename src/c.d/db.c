@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <sqlite3.h>
 #include <string.h>
-#include <math.h>
 #include <libgen.h>
 
 #include "logger_thread.h"

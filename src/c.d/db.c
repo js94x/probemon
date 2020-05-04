@@ -284,7 +284,7 @@ int insert_probereq(probereq_t pr, sqlite3 *db)
   // convert timeval to double
   double ts;
   char tstmp[32];
-  sprintf(tstmp, "%lu.%lu", pr.tv.tv_sec, pr.tv.tv_usec);
+  sprintf(tstmp, "%lu.%06lu", pr.tv.tv_sec, pr.tv.tv_usec);
   ts = strtod(tstmp, NULL);
 
   char sql[256];

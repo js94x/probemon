@@ -281,9 +281,15 @@ int insert_probereq(probereq_t pr, sqlite3 *db)
   vendor_id = insert_vendor(pr.vendor, db);
   mac_id = insert_mac(pr.mac, vendor_id, db);
 
+  // convert timeval to double
+  double ts;
+  char tstmp[32];
+  sprintf(tstmp, "%lu.%lu", pr.tv.tv_sec, pr.tv.tv_usec);
+  ts = strtod(tstmp, NULL);
+
   char sql[256];
   snprintf(sql, 256, "insert into probemon (date, mac, ssid, rssi)"
-    "values ('%lu', '%u', '%u', '%d');", pr.ts, mac_id, ssid_id, pr.rssi);
+    "values ('%f', '%u', '%u', '%d');", ts, mac_id, ssid_id, pr.rssi);
   if((ret = sqlite3_exec(db, sql, do_nothing, 0, NULL)) != SQLITE_OK) {
     fprintf(stderr, "Error: %s (%s:%d in %s)\n", sqlite3_errmsg(db), basename(__FILE__), __LINE__, __func__);
     sqlite3_close(db);

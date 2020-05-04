@@ -73,7 +73,8 @@ void process_packet(uint8_t * args, const struct pcap_pkthdr *header, const uint
   lower(mac);
 
   probereq_t *pr = malloc(sizeof(probereq_t));
-  pr->ts = header->ts.tv_sec;
+  pr->tv.tv_sec = header->ts.tv_sec;
+  pr->tv.tv_usec = header->ts.tv_usec;
   pr->mac = mac;
   pr->ssid = ssid;
   pr->ssid_len = ssid_len;

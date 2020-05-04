@@ -112,7 +112,7 @@ char *probereq_to_str(probereq_t pr)
   char tmp[1024], vendor[MAX_VENDOR_LENGTH+1], ssid[MAX_SSID_LENGTH+1], datetime[20], rssi[5];
   char *pr_str;
 
-  strftime(datetime, 20, "%Y-%m-%d %H:%M:%S", localtime(&pr.ts));
+  strftime(datetime, 20, "%Y-%m-%d %H:%M:%S", localtime(&pr.tv.tv_sec));
 
   char *first = strndup(pr.mac, 2);
   bool is_laa = strtol(first, NULL, 16) & 0x2;

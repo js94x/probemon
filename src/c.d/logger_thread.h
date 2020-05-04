@@ -5,7 +5,7 @@
 #include <time.h>
 
 struct probereq {
-  time_t ts;
+  struct timeval tv;
   char *mac;
   char *vendor;
   uint8_t *ssid;

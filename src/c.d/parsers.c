@@ -14,7 +14,7 @@
 #define MAX_VENDOR_LENGTH 25
 #define MAX_SSID_LENGTH 15
 
-int8_t parse_radiotap_header(const u_char * packet, uint16_t * freq, int8_t * rssi)
+int8_t parse_radiotap_header(const uint8_t * packet, uint16_t * freq, int8_t * rssi)
 {
   // parse radiotap header to get frequency and rssi
   // returns radiotap header size or -1 on error
@@ -73,18 +73,18 @@ int8_t parse_radiotap_header(const u_char * packet, uint16_t * freq, int8_t * rs
   return offset;
 }
 
-void parse_probereq_frame(const u_char *packet, uint32_t header_len,
+void parse_probereq_frame(const uint8_t *packet, uint32_t header_len,
   int8_t offset, char **mac, uint8_t **ssid, uint8_t *ssid_len)
 {
   *mac = malloc(18 * sizeof(char));
   // parse the probe request frame to look for mac and Information Element we need (ssid)
   // SA
-  const u_char *sa_addr = packet + offset + 2 + 2 + 6;   // FC + duration + DA
+  const uint8_t *sa_addr = packet + offset + 2 + 2 + 6;   // FC + duration + DA
   sprintf(*mac, "%02X:%02X:%02X:%02X:%02X:%02X", sa_addr[0],
     sa_addr[1], sa_addr[2], sa_addr[3], sa_addr[4], sa_addr[5]);
 
   *ssid = NULL;
-  u_char *ie = (u_char *)sa_addr + 6 + 6 + 2 ; // + SA + BSSID + Seqctl
+  uint8_t *ie = (uint8_t *)sa_addr + 6 + 6 + 2 ; // + SA + BSSID + Seqctl
   uint8_t ie_len = *(ie + 1);
   *ssid_len = 0;
 

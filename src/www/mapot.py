@@ -131,7 +131,7 @@ def create_app():
                 for m in list(mac_ids.keys()):
                     md = []
                     ssids = set()
-                    sql = 'select date, first_seen, last_seen, count, min, max, avg, med, ssids from stats where mac_id=?'
+                    sql = 'select date, first_seen, last_seen, count, min, max, avg, med, ssids from stats where mac_id=? order by date;'
                     cur.execute(sql, (m,))
                     for d, first, last, count, rmin, rmax, ravg, rmed, ssid in cur.fetchall():
                         first = time.mktime(time.strptime(f'{d}T{first}', '%Y-%m-%dT%H:%M:%S'))*1000

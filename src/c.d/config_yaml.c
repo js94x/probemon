@@ -72,7 +72,12 @@ char **parse_config_yaml(const char *path, const char *keyname, int *count)
 
 int cmp_uint64_t(const void *u, const void*v)
 {
-  return *(uint64_t *)u-*(uint64_t *)v;
+  uint64_t a = *(uint64_t *)u;
+  uint64_t b = *(uint64_t *)v;
+  if (a<b) return -1;
+  if (a>b) return 1;
+  // assert(a==b);
+  return 0;
 }
 
 uint64_t *parse_ignored_entries(char **entries, int count)

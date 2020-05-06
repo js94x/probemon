@@ -66,7 +66,12 @@ void free_manuf_t(manuf_t *m)
 
 int cmp_manuf_t(const void *u, const void *v)
 {
-  return ((manuf_t *)u)->min-((manuf_t *)v)->min;
+  uint64_t a = ((manuf_t *)u)->min;
+  uint64_t b = ((manuf_t *)v)->min;
+  if (a<b) return -1;
+  if (a>b) return 1;
+  //assert(a == b);
+  return 0;
 }
 
 int parse_mac_field(char *mac, manuf_t *m)
@@ -160,7 +165,7 @@ manuf_t *parse_manuf_file(const char*path, size_t *ouidb_size)
   }
   fclose(manuf);
 
-  //qsort(ouidb, *ouidb_size, sizeof(manuf_t), cmp_manuf_t);
+  qsort(ouidb, *ouidb_size, sizeof(manuf_t), cmp_manuf_t);
 
   if (line) {
     free(line);

@@ -72,7 +72,7 @@ int8_t parse_radiotap_header(const uint8_t * packet, uint16_t * freq, int8_t * r
   return offset;
 }
 
-void parse_probereq_frame(const uint8_t *packet, uint32_t header_len,
+void parse_probereq_frame(const uint8_t *packet, uint32_t packet_len,
   int8_t offset, char **mac, uint8_t **ssid, uint8_t *ssid_len)
 {
   *mac = malloc(18 * sizeof(char));
@@ -88,8 +88,8 @@ void parse_probereq_frame(const uint8_t *packet, uint32_t header_len,
   *ssid_len = 0;
 
   // iterate over Information Element to look for SSID
-  while (ie < packet + header_len) {
-    if ((ie + ie_len + 2 < packet + header_len)) {     // just double check that this is an IE with length inside packet
+  while (ie < packet + packet_len) {
+    if ((ie + ie_len + 2 <= packet + packet_len)) {     // just double check that this is an IE with length inside packet
       if (*ie == 0) { // SSID aka IE with id 0
         *ssid_len = *(ie + 1);
         if (*ssid_len > 32) {

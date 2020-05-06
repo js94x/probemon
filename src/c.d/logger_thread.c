@@ -81,7 +81,7 @@ void *process_queue(void *args)
       uint64_t *res = NULL;
       if (ignored != NULL) {
         char *tmp = str_replace(pr->mac, ":", "");
-        uint64_t mac_number = strtol(tmp, NULL, 16);
+        uint64_t mac_number = strtoll(tmp, NULL, 16);
         free(tmp);
         res = bsearch(&mac_number, ignored, sizeof(uint64_t), ignored_count, cmp_uint64_t);
       }

@@ -115,7 +115,7 @@ char *probereq_to_str(probereq_t pr)
   strftime(datetime, 20, "%Y-%m-%d %H:%M:%S", localtime(&pr.tv.tv_sec));
 
   char *first = strndup(pr.mac, 2);
-  bool is_laa = strtol(first, NULL, 16) & 0x2;
+  bool is_laa = strtoll(first, NULL, 16) & 0x2;
   free(first);
 
   // cut or pad vendor string

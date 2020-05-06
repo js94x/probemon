@@ -91,7 +91,7 @@ uint64_t *parse_ignored_entries(char **entries, int count)
 
   for (int i=0; i<count; i++) {
     char *tmp = str_replace(entries[i], ":", "");
-    result[i] = strtol(tmp, NULL, 16);
+    result[i] = strtoll(tmp, NULL, 16);
     free(tmp);
   }
 

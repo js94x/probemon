@@ -85,20 +85,20 @@ int parse_mac_field(char *mac, manuf_t *m)
     char *min = malloc(13 * sizeof(char));
     strncpy(min, mr, 6);
     strcat(min, "000000");
-    m->min = strtol(min, NULL, 16);
+    m->min = strtoll(min, NULL, 16);
     char *max = malloc(13 * sizeof(char));
     strncpy(max, mr, 6);
     strcat(max, "ffffff");
-    m->max = strtol(max, NULL, 16);
+    m->max = strtoll(max, NULL, 16);
     free(min);
     free(max);
   } else if (strlen(mr) == 12) {
-    m->min = strtol(mr, NULL, 16);
+    m->min = strtoll(mr, NULL, 16);
     m->max = m->min;
   } else if (strlen(mr) == 15) {
     mr[12] = '\0';
     char *tmp = strndup(mr, 11);
-    m->min = strtol(tmp, NULL, 16);
+    m->min = strtoll(tmp, NULL, 16);
     free(tmp);
     tmp = strndup(mr+13, 2);
     int mask = (int)strtol(tmp, NULL, 10);
@@ -177,7 +177,7 @@ manuf_t *parse_manuf_file(const char*path, size_t *ouidb_size)
 int lookup_oui(char *mac, manuf_t *ouidb, size_t ouidb_size)
 {
   char *tmp = str_replace(mac, ":", "");
-  uint64_t mac_number = strtol(tmp, NULL, 16);
+  uint64_t mac_number = strtoll(tmp, NULL, 16);
   free(tmp);
 
   int count = 0;

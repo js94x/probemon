@@ -4,7 +4,7 @@
 
 #include "manuf.h"
 
-char *str_strip(const char *s)
+static inline char *str_strip(const char *s)
 {
     char *ret;
     if (s[strlen(s)-1] == '\n') {

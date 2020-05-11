@@ -325,17 +325,19 @@ $(function() {
             }
             return false;
           }
-          $('#msg').hide();
           $('#loading').hide();
+          $('#msg').text('Repacking data...');
           _ds = repack(data);
           if ($('#main-chart').is(':visible')) {
-           // don't show the chart on mobile
-           if (chart === null) {
-             drawMainChart(ctx, _ds);
-           } else {
-             updateMainChart(chart, _ds);
-           }
+            // don't show the chart on mobile
+            $('#msg').text('Drawing data...');
+            if (chart === null) {
+              drawMainChart(ctx, _ds);
+            } else {
+              updateMainChart(chart, _ds);
+            }
           } else {
+            $('#msg').text('Analyzing data...');
             // but use a table for mobile
             var macs = '', c = 0, color;
             var gen = colorGenerator();
@@ -389,6 +391,7 @@ $(function() {
               updateRSSIModal(_ds[indx]);
             });
           }
+          $('#msg').hide().text('Downloading data...');
         });
       }
     }).catch(function(error){

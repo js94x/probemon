@@ -1,5 +1,5 @@
-#ifndef WORKER_THREAD_H
-#define WORKER_THREAD_H
+#ifndef LOGGER_THREAD_H
+#define LOGGER_THREAD_H
 
 #include <stdint.h>
 #include <time.h>

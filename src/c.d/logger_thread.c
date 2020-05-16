@@ -19,18 +19,18 @@ worker thread that will process the queue filled by process_packet()
 #include "manuf.h"
 #include "config_yaml.h"
 
-pthread_cond_t cv;
-pthread_mutex_t mutex_queue;
+extern pthread_cond_t cv;
+extern pthread_mutex_t mutex_queue;
 extern queue_t *queue;
-sqlite3 *db;
+extern sqlite3 *db;
 struct timespec start_ts_cache;
-bool option_stdout;
+extern bool option_stdout;
 
-manuf_t *ouidb;
-size_t ouidb_size;
+extern manuf_t *ouidb;
+extern size_t ouidb_size;
 
-uint64_t *ignored;
-int ignored_count;
+extern uint64_t *ignored;
+extern int ignored_count;
 
 void free_probereq(probereq_t *pr)
 {

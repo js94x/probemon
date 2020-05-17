@@ -51,12 +51,6 @@ void sigint_handler(int s)
   pcap_breakloop(handle);
 }
 
-void lower(char *p)
-{
-  // convert string (in place) to lowercase
-  for ( ; *p; ++p) *p = tolower(*p);
-}
-
 void process_packet(uint8_t * args, const struct pcap_pkthdr *header, const uint8_t *packet)
 {
   uint16_t freq;
@@ -71,7 +65,6 @@ void process_packet(uint8_t * args, const struct pcap_pkthdr *header, const uint
   uint8_t ssid_len, *ssid;
 
   parse_probereq_frame(packet, header->len, offset, &mac, &ssid, &ssid_len);
-  lower(mac);
 
   probereq_t *pr = malloc(sizeof(probereq_t));
   pr->tv.tv_sec = header->ts.tv_sec;

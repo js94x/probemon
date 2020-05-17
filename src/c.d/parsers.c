@@ -54,7 +54,7 @@ int8_t parse_radiotap_header(const uint8_t * packet, uint16_t * freq, int8_t * r
 
   *freq = 0;
   *rssi = 0;
-  // iterate through radiotap filed and look for frequency and rssi
+  // iterate through radiotap fields and look for frequency and rssi
   while (!(err = ieee80211_radiotap_iterator_next(&iter))) {
     if (iter.this_arg_index == IEEE80211_RADIOTAP_CHANNEL) {
       assert(iter.this_arg_size == 4);  // XXX: why ?
@@ -79,7 +79,7 @@ void parse_probereq_frame(const uint8_t *packet, uint32_t packet_len,
   // parse the probe request frame to look for mac and Information Element we need (ssid)
   // SA
   const uint8_t *sa_addr = packet + offset + 2 + 2 + 6;   // FC + duration + DA
-  sprintf(*mac, "%02X:%02X:%02X:%02X:%02X:%02X", sa_addr[0],
+  sprintf(*mac, "%02x:%02x:%02x:%02x:%02x:%02x", sa_addr[0],
     sa_addr[1], sa_addr[2], sa_addr[3], sa_addr[4], sa_addr[5]);
 
   *ssid = NULL;

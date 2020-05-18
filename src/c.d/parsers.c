@@ -126,7 +126,7 @@ char *probereq_to_str(probereq_t pr)
       }
       vendor[MAX_VENDOR_LENGTH] = '\0';
   } else {
-    strncpy(vendor, pr.vendor, strlen(pr.vendor));
+    strcpy(vendor, pr.vendor);
     for (int i=strlen(pr.vendor); i<MAX_VENDOR_LENGTH; i++) {
       vendor[i] = ' ';
     }
@@ -146,13 +146,13 @@ char *probereq_to_str(probereq_t pr)
   }
   // cut or pad ssid string
   if (strlen(tmp) >= MAX_SSID_LENGTH) {
-      strncpy(ssid, tmp, MAX_SSID_LENGTH-1);
+      strncpy(ssid, tmp, MAX_SSID_LENGTH);
       for (int i=MAX_SSID_LENGTH-3; i<MAX_SSID_LENGTH; i++) {
         ssid[i] = '.';
       }
       ssid[MAX_SSID_LENGTH] = '\0';
   } else {
-    strncpy(ssid, tmp, strlen(tmp));
+    strcpy(ssid, tmp);
     for (int i=strlen(tmp); i<MAX_SSID_LENGTH; i++) {
       ssid[i] = ' ';
     }
@@ -175,8 +175,7 @@ char *probereq_to_str(probereq_t pr)
   strcat(tmp, "\t");
   strcat(tmp, rssi);
 
-  pr_str = malloc(strlen(tmp)+1);
-  strncpy(pr_str, tmp, strlen(tmp)+1);
+  pr_str = strdup(tmp);
 
   return pr_str;
 }

@@ -266,6 +266,8 @@ def init_db(conn, c):
     c.execute(sql)
     sql = 'pragma journal_mode = off;' # disable journal for rollback (we don't use this)
     c.execute(sql)
+    sql = 'pragma foreign_keys = on;' # explcilty turn that on to be effective
+    c.execute(sql)
     conn.commit()
 
 def check_event(packet):

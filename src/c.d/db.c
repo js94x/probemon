@@ -85,6 +85,12 @@ int init_probemon_db(const char *db_file, sqlite3 **db)
     sqlite3_close(*db);
     return ret;
   }
+  sql = "pragma foreign_keys = on;"; // turn that on to enforce foreign keys
+  if ((ret = sqlite3_exec(*db, sql, NULL, 0, NULL)) != SQLITE_OK) {
+    fprintf(stderr, "Error: %s (%s:%d in %s)\n", sqlite3_errmsg(*db), basename(__FILE__), __LINE__, __func__);
+    sqlite3_close(*db);
+    return ret;
+  }
 
   return 0;
 }

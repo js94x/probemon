@@ -8,6 +8,7 @@
 #include "manuf.h"
 #include "parsers.h"
 #include "base64.h"
+#include "lruc.h"
 
 int init_probemon_db(const char *db_file, sqlite3 **db)
 {
@@ -260,7 +261,7 @@ int64_t insert_mac(const char *mac, int64_t vendor_id, sqlite3 *db)
   return mac_id;
 }
 
-int insert_probereq(probereq_t pr, sqlite3 *db)
+int insert_probereq(probereq_t pr, sqlite3 *db, lruc *mac_pk_cache, lruc *ssid_pk_cache)
 {
   int64_t vendor_id, ssid_id, mac_id;
   int ret;
@@ -273,15 +274,37 @@ int insert_probereq(probereq_t pr, sqlite3 *db)
   if (!is_utf8(tmp)) {
     // base64 encode the ssid
     size_t length;
-    char * b64tmp = base64_encode((unsigned char *)tmp, pr.ssid_len, &length);
-    strcpy(tmp, "b64_");
-    strncat(tmp, b64tmp, length);
+    char *b64tmp = base64_encode((unsigned char *)tmp, pr.ssid_len, &length);
+    snprintf(tmp, length+4+1, "b64_%s", b64tmp);
     free(b64tmp);
   }
 
-  ssid_id = insert_ssid(tmp, db);
-  vendor_id = insert_vendor(pr.vendor, db);
-  mac_id = insert_mac(pr.mac, vendor_id, db);
+  void *value = NULL;
+  // look up ssid (tmp) in ssid_pk_cache
+  lruc_get(ssid_pk_cache, tmp, strlen(tmp)+1, &value);
+  if (value == NULL) {
+    ssid_id = insert_ssid(tmp, db);
+    // add the ssid_id to the cache
+    int64_t *new_value = malloc(sizeof(int64_t));
+    *new_value = ssid_id;
+    lruc_set(ssid_pk_cache, strdup(tmp), strlen(tmp)+1, new_value, sizeof(int64_t));
+  } else {
+    ssid_id = *(int64_t *)value;
+  }
+
+  // look up mac in mac_pk_cache
+  value = NULL;
+  lruc_get(mac_pk_cache, pr.mac, 18, &value);
+  if (value == NULL) {
+    vendor_id = insert_vendor(pr.vendor, db);
+    mac_id = insert_mac(pr.mac, vendor_id, db);
+    // add the mac_id to the cache
+    int64_t *new_value = malloc(sizeof(int64_t));
+    *new_value = mac_id;
+    lruc_set(mac_pk_cache, strdup(pr.mac), 18, new_value, sizeof(int64_t));
+  } else {
+    mac_id = *(int64_t *)value;
+  }
 
   // convert timeval to double
   double ts;

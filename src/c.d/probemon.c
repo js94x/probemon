@@ -19,7 +19,7 @@
 #include "config_yaml.h"
 
 #define NAME "probemon"
-#define VERSION "0.1"
+#define VERSION "0.2"
 
 #define SNAP_LEN 512
 #define MAX_QUEUE_SIZE 128

@@ -18,6 +18,10 @@ worker thread that will process the queue filled by process_packet()
 #include "db.h"
 #include "manuf.h"
 #include "config_yaml.h"
+#include "lruc.h"
+
+#define MAC_CACHE_SIZE 64
+#define SSID_CACHE_SIZE 64
 
 extern pthread_cond_t cv;
 extern pthread_mutex_t mutex_queue;
@@ -31,6 +35,8 @@ extern size_t ouidb_size;
 
 extern uint64_t *ignored;
 extern int ignored_count;
+
+lruc *ssid_pk_cache = NULL, *mac_pk_cache = NULL;
 
 void free_probereq(probereq_t *pr)
 {
@@ -53,6 +59,9 @@ void *process_queue(void *args)
   probereq_t **prs;
   int qs;
   struct timespec now;
+
+  mac_pk_cache = lruc_new(MAC_CACHE_SIZE * sizeof(int64_t), sizeof(int64_t));
+  ssid_pk_cache = lruc_new(SSID_CACHE_SIZE * sizeof(int64_t), sizeof(int64_t));
 
   while (true) {
     pthread_mutex_lock(&mutex_queue);
@@ -86,7 +95,7 @@ void *process_queue(void *args)
         res = bsearch(&mac_number, ignored, sizeof(uint64_t), ignored_count, cmp_uint64_t);
       }
       if (res == NULL) {
-        insert_probereq(*pr, db);
+        insert_probereq(*pr, db, mac_pk_cache, ssid_pk_cache);
         if (option_stdout) {
           char *pr_str = probereq_to_str(*pr);
           printf("%s\n", pr_str);
@@ -110,5 +119,9 @@ void *process_queue(void *args)
     }
     free(prs);
   }
+
+  lruc_free(mac_pk_cache);
+  lruc_free(ssid_pk_cache);
+
   return NULL;
 }

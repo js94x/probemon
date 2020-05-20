@@ -3,6 +3,7 @@
 #include <sqlite3.h>
 #include <string.h>
 #include <libgen.h>
+#include <inttypes.h>
 
 #include "logger_thread.h"
 #include "manuf.h"
@@ -249,7 +250,7 @@ int64_t insert_mac(const char *mac, int64_t vendor_id, sqlite3 *db)
 
   mac_id = search_mac(mac, db);
   if (!mac_id) {
-    snprintf(sql, 128, "insert into mac (address, vendor) values ('%s', '%lu');", mac, vendor_id);
+    snprintf(sql, 128, "insert into mac (address, vendor) values ('%s', '%"PRId64"');", mac, vendor_id);
     if ((ret = sqlite3_exec(db, sql, NULL, 0, NULL)) != SQLITE_OK) {
       fprintf(stderr, "Error: %s (%s:%d in %s)\n", sqlite3_errmsg(db), basename(__FILE__), __LINE__, __func__);
       sqlite3_close(db);
@@ -314,7 +315,7 @@ int insert_probereq(probereq_t pr, sqlite3 *db, lruc *mac_pk_cache, lruc *ssid_p
 
   char sql[256];
   snprintf(sql, 256, "insert into probemon (date, mac, ssid, rssi)"
-    "values ('%f', '%lu', '%lu', '%d');", ts, mac_id, ssid_id, pr.rssi);
+    "values ('%f', '%"PRId64"', '%"PRId64"', '%d');", ts, mac_id, ssid_id, pr.rssi);
   if ((ret = sqlite3_exec(db, sql, NULL, 0, NULL)) != SQLITE_OK) {
     fprintf(stderr, "Error: %s (%s:%d in %s)\n", sqlite3_errmsg(db), basename(__FILE__), __LINE__, __func__);
     sqlite3_close(db);

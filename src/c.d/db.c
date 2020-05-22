@@ -16,7 +16,6 @@ int init_probemon_db(const char *db_file, sqlite3 **db)
   int ret;
   if ((ret = sqlite3_open(db_file, db)) != SQLITE_OK) {
     fprintf(stderr, "Error: %s (%s:%d in %s)\n", sqlite3_errmsg(*db), basename(__FILE__), __LINE__, __func__);
-    sqlite3_close(*db);
     return ret;
   }
 
@@ -27,7 +26,6 @@ int init_probemon_db(const char *db_file, sqlite3 **db)
     ");";
   if ((ret = sqlite3_exec(*db, sql, NULL, 0, NULL)) != SQLITE_OK) {
     fprintf(stderr, "Error: %s (%s:%d in %s)\n", sqlite3_errmsg(*db), basename(__FILE__), __LINE__, __func__);
-    sqlite3_close(*db);
     return ret;
   }
   sql = "create table if not exists mac("
@@ -38,7 +36,6 @@ int init_probemon_db(const char *db_file, sqlite3 **db)
     ");";
   if ((ret = sqlite3_exec(*db, sql, NULL, 0, NULL)) != SQLITE_OK) {
     fprintf(stderr, "Error: %s (%s:%d in %s)\n", sqlite3_errmsg(*db), basename(__FILE__), __LINE__, __func__);
-    sqlite3_close(*db);
     return ret;
   }
   sql = "create table if not exists ssid("
@@ -47,7 +44,6 @@ int init_probemon_db(const char *db_file, sqlite3 **db)
     ");";
   if ((ret = sqlite3_exec(*db, sql, NULL, 0, NULL)) != SQLITE_OK) {
     fprintf(stderr, "Error: %s (%s:%d in %s)\n", sqlite3_errmsg(*db), basename(__FILE__), __LINE__, __func__);
-    sqlite3_close(*db);
     return ret;
   }
   sql = "create table if not exists probemon("
@@ -60,37 +56,31 @@ int init_probemon_db(const char *db_file, sqlite3 **db)
     ");";
   if ((ret = sqlite3_exec(*db, sql, NULL, 0, NULL)) != SQLITE_OK) {
     fprintf(stderr, "Error: %s (%s:%d in %s)\n", sqlite3_errmsg(*db), basename(__FILE__), __LINE__, __func__);
-    sqlite3_close(*db);
     return ret;
   }
   sql = "create index if not exists idx_probemon_date on probemon(date);";
   if ((ret = sqlite3_exec(*db, sql, NULL, 0, NULL)) != SQLITE_OK) {
     fprintf(stderr, "Error: %s (%s:%d in %s)\n", sqlite3_errmsg(*db), basename(__FILE__), __LINE__, __func__);
-    sqlite3_close(*db);
     return ret;
   }
   sql = "pragma synchronous = normal;";
   if ((ret = sqlite3_exec(*db, sql, NULL, 0, NULL)) != SQLITE_OK) {
     fprintf(stderr, "Error: %s (%s:%d in %s)\n", sqlite3_errmsg(*db), basename(__FILE__), __LINE__, __func__);
-    sqlite3_close(*db);
     return ret;
   }
   sql = "pragma temp_store = 2;"; // to store temp table and indices in memory
   if ((ret = sqlite3_exec(*db, sql, NULL, 0, NULL)) != SQLITE_OK) {
     fprintf(stderr, "Error: %s (%s:%d in %s)\n", sqlite3_errmsg(*db), basename(__FILE__), __LINE__, __func__);
-    sqlite3_close(*db);
     return ret;
   }
   sql = "pragma journal_mode = off;"; // disable journal for rollback (we don't use this)
   if ((ret = sqlite3_exec(*db, sql, NULL, 0, NULL)) != SQLITE_OK) {
     fprintf(stderr, "Error: %s (%s:%d in %s)\n", sqlite3_errmsg(*db), basename(__FILE__), __LINE__, __func__);
-    sqlite3_close(*db);
     return ret;
   }
   sql = "pragma foreign_keys = on;"; // turn that on to enforce foreign keys
   if ((ret = sqlite3_exec(*db, sql, NULL, 0, NULL)) != SQLITE_OK) {
     fprintf(stderr, "Error: %s (%s:%d in %s)\n", sqlite3_errmsg(*db), basename(__FILE__), __LINE__, __func__);
-    sqlite3_close(*db);
     return ret;
   }
 
@@ -144,7 +134,6 @@ int64_t insert_ssid(const char *ssid, sqlite3 *db)
     free(nssid);
     if ((ret = sqlite3_exec(db, sql, NULL, 0, NULL)) != SQLITE_OK) {
       fprintf(stderr, "Error: %s (%s:%d in %s)\n", sqlite3_errmsg(db), basename(__FILE__), __LINE__, __func__);
-      sqlite3_close(db);
       return ret * -1;
     }
     ssid_id = search_ssid(ssid, db);
@@ -200,7 +189,6 @@ int64_t insert_vendor(const char *vendor, sqlite3 *db)
     free(nvendor);
     if ((ret = sqlite3_exec(db, sql, NULL, 0, NULL)) != SQLITE_OK) {
       fprintf(stderr, "Error: %s (%s:%d in %s)\n", sqlite3_errmsg(db), basename(__FILE__), __LINE__, __func__);
-      sqlite3_close(db);
       return ret * -1;
     }
     vendor_id = search_vendor(vendor, db);
@@ -253,7 +241,6 @@ int64_t insert_mac(const char *mac, int64_t vendor_id, sqlite3 *db)
     snprintf(sql, 128, "insert into mac (address, vendor) values ('%s', '%"PRId64"');", mac, vendor_id);
     if ((ret = sqlite3_exec(db, sql, NULL, 0, NULL)) != SQLITE_OK) {
       fprintf(stderr, "Error: %s (%s:%d in %s)\n", sqlite3_errmsg(db), basename(__FILE__), __LINE__, __func__);
-      sqlite3_close(db);
       return ret * -1;
     }
     mac_id = search_mac(mac, db);
@@ -318,7 +305,6 @@ int insert_probereq(probereq_t pr, sqlite3 *db, lruc *mac_pk_cache, lruc *ssid_p
     "values ('%f', '%"PRId64"', '%"PRId64"', '%d');", ts, mac_id, ssid_id, pr.rssi);
   if ((ret = sqlite3_exec(db, sql, NULL, 0, NULL)) != SQLITE_OK) {
     fprintf(stderr, "Error: %s (%s:%d in %s)\n", sqlite3_errmsg(db), basename(__FILE__), __LINE__, __func__);
-    sqlite3_close(db);
     return ret * -1;
   }
 
@@ -333,7 +319,6 @@ int begin_txn(sqlite3 *db)
   snprintf(sql, 32, "begin transaction;");
   if ((ret = sqlite3_exec(db, sql, NULL, 0, NULL)) != SQLITE_OK) {
     fprintf(stderr, "Error: %s (%s:%d in %s)\n", sqlite3_errmsg(db), basename(__FILE__), __LINE__, __func__);
-    sqlite3_close(db);
     return ret * -1;
   }
 
@@ -348,7 +333,6 @@ int commit_txn(sqlite3 *db)
   snprintf(sql, 32, "commit transaction;");
   if ((ret = sqlite3_exec(db, sql, NULL, 0, NULL)) != SQLITE_OK) {
     fprintf(stderr, "Error: %s (%s:%d in %s)\n", sqlite3_errmsg(db), basename(__FILE__), __LINE__, __func__);
-    sqlite3_close(db);
     return ret * -1;
   }
 

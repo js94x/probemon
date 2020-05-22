@@ -60,8 +60,8 @@ void *process_queue(void *args)
   int qs;
   struct timespec now;
 
-  mac_pk_cache = lruc_new(MAC_CACHE_SIZE * sizeof(int64_t), sizeof(int64_t));
-  ssid_pk_cache = lruc_new(SSID_CACHE_SIZE * sizeof(int64_t), sizeof(int64_t));
+  mac_pk_cache = lruc_new(MAC_CACHE_SIZE, 1);
+  ssid_pk_cache = lruc_new(SSID_CACHE_SIZE, 1);
 
   while (true) {
     pthread_mutex_lock(&mutex_queue);

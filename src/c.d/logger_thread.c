@@ -63,6 +63,8 @@ void *process_queue(void *args)
   mac_pk_cache = lruc_new(MAC_CACHE_SIZE, 1);
   ssid_pk_cache = lruc_new(SSID_CACHE_SIZE, 1);
 
+  clock_gettime(CLOCK_MONOTONIC, &start_ts_cache);
+
   while (true) {
     pthread_mutex_lock(&mutex_queue);
     pthread_cond_wait(&cv, &mutex_queue);

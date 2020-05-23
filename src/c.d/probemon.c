@@ -25,7 +25,7 @@
 #define VERSION "0.2"
 
 #define SNAP_LEN 512
-#define MAX_QUEUE_SIZE 128
+#define MAX_QUEUE_SIZE 128 // watch out. this is redefined in logger_thread.c; keep them in sync !
 
 #define DB_NAME "./probemon.db"
 #define MANUF_NAME "./manuf"

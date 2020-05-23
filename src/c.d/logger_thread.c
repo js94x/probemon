@@ -20,6 +20,7 @@ worker thread that will process the queue filled by process_packet()
 #include "config_yaml.h"
 #include "lruc.h"
 
+#define MAX_QUEUE_SIZE 128 // watch out: this is already defined in probemon.c; keep them in sync
 #define MAC_CACHE_SIZE 64
 #define SSID_CACHE_SIZE 64
 
@@ -56,7 +57,7 @@ void free_probereq(probereq_t *pr)
 void *process_queue(void *args)
 {
   probereq_t *pr;
-  probereq_t **prs;
+  probereq_t *prs[MAX_QUEUE_SIZE];
   int qs;
   struct timespec now;
 
@@ -70,7 +71,6 @@ void *process_queue(void *args)
     pthread_cond_wait(&cv, &mutex_queue);
 
     qs = queue->size;
-    prs = malloc(sizeof(probereq_t *) * qs);
     // off-load queue to a tmp array
     for (int i = 0; i < qs; i++) {
       prs[i] = (probereq_t *) dequeue(queue);
@@ -116,10 +116,8 @@ void *process_queue(void *args)
       start_ts_cache = now;
     }
     for (int j = 0; j < qs; j++) {
-      pr = prs[j];
-      free_probereq(pr);
+      free_probereq(prs[j]);
     }
-    free(prs);
   }
 
   lruc_free(mac_pk_cache);

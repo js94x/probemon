@@ -10,6 +10,9 @@
 #include <pthread.h>
 #include <time.h>
 #include <sqlite3.h>
+#ifdef HAS_SYS_STAT_H
+#include <sys/stat.h>
+#endif
 
 #include "queue.h"
 #include "parsers.h"
@@ -334,8 +337,19 @@ int main(int argc, char *argv[])
 
   clock_gettime(CLOCK_MONOTONIC, &start_ts_queue);
 
-  if (init_probemon_db(db_name, &db) != 0) {
-    fprintf(stderr, "Error: can't initialize sqlite3 db %s\n", db_name);
+  #ifdef HAS_SYS_STAT_H
+  if (access(db_name, F_OK) == 0) {
+    // file exits, so double check it has writable permission
+    struct stat perm;
+    stat(db_name, &perm);
+    if (!(perm.st_mode & S_IWUSR)) {
+      // abort because the file does exist but is not writable. sqlite3 will not write to it
+      fprintf(stderr, "Error: %s is not writable\n", db_name);
+      goto logger_failure;;
+    }
+  }
+  #endif
+  if (init_probemon_db(db_name, &db) != SQLITE_OK) {
     goto logger_failure;
   }
   begin_txn(db);

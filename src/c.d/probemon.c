@@ -380,6 +380,8 @@ int main(int argc, char *argv[])
   }
   free(ouidb);
 
+  free(ignored);
+
 logger_failure:
   pthread_cancel(logger);
 

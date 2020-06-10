@@ -306,7 +306,8 @@ def main():
         sys.exit(-1)
     finally:
         event.set()
-        pq.join()
+        if pq.is_alive():
+            pq.join()
 
 if __name__ == '__main__':
     try:

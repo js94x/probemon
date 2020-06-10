@@ -123,9 +123,6 @@ def process_queue(queue, args):
                 conn.commit()
             except sqlite3.OperationalError as e:
                 print(f'Error: {e}')
-                # db is locked ? Retry again
-                time.sleep(10)
-                conn.commit()
             if event.is_set():
                 break
         time.sleep(1)

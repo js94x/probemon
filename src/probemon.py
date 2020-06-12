@@ -278,7 +278,7 @@ def main():
         subprocess.check_call(cmd.split(' '))
     except subprocess.CalledProcessError as c:
         print(f'Error: failed to switch to channel {args.channel} for interface {args.interface}', file=sys.stderr)
-        sys.exit(-1)
+        sys.exit(1)
 
     update_vdb = False
     global vendor_db
@@ -291,7 +291,7 @@ def main():
     vendor_db = manuf.MacParser(manuf_name='./manuf', update=update_vdb)
 
     # use a detached thread to process the queue and exit faster packet callback
-    pq = threading.Thread(target=process_queue, args=(queue, args))
+    pq = threading.Thread(target=process_queue, args=(queue, args), daemon=True)
     pq.start()
 
     print(f':: Started listening to probe requests on channel {args.channel} on interface {args.interface}')
@@ -301,10 +301,10 @@ def main():
             store=0, filter='wlan type mgt subtype probe-req', stop_filter=check_event)
     except Scapy_Exception as se:
         print(f'Error: {se}', file=sys.stderr)
-        sys.exit(-1)
+        sys.exit(1)
     except OSError as o:
         print(f"Error: {args.interface} interface not found", file=sys.stderr)
-        sys.exit(-1)
+        sys.exit(1)
     finally:
         event.set()
         if pq.is_alive():
@@ -326,7 +326,7 @@ if __name__ == '__main__':
 
     if not args.interface:
         print('Error: argument -i/--interface is required', file=sys.stderr)
-        sys.exit(-1)
+        sys.exit(1)
 
     if args.ignore is not None:
         config['ignored'] = args.ignore

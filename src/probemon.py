@@ -307,8 +307,8 @@ def main():
         sys.exit(1)
     finally:
         event.set()
-        if pq.is_alive():
-            pq.join()
+    print('Exiting...')
+    time.sleep(7) # default sqlite connect timeout + 2
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=DESCRIPTION)

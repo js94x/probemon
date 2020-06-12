@@ -124,6 +124,7 @@ def process_queue(queue, args):
             except sqlite3.OperationalError as e:
                 print(f'Error: {e}')
             if event.is_set():
+                conn.close()
                 break
         time.sleep(1)
 
@@ -310,37 +311,35 @@ def main():
             pq.join()
 
 if __name__ == '__main__':
-    try:
-        parser = argparse.ArgumentParser(description=DESCRIPTION)
-        parser.add_argument('-c', '--channel', default=1, type=int, help="the channel to listen on")
-        parser.add_argument('-d', '--db', default='probemon.db', help="database file name to use")
-        parser.add_argument('-i', '--interface', help="the capture interface to use")
-        parser.add_argument('-I', '--ignore', action='append', help="mac address to ignore")
-        parser.add_argument('-s', '--stdout', action='store_true', default=False, help="also log probe request to stdout")
-        parser.add_argument('-v', '--version', action='store_true', default=False, help="show version and exit")
-        args = parser.parse_args()
+    parser = argparse.ArgumentParser(description=DESCRIPTION)
+    parser.add_argument('-c', '--channel', default=1, type=int, help="the channel to listen on")
+    parser.add_argument('-d', '--db', default='probemon.db', help="database file name to use")
+    parser.add_argument('-i', '--interface', help="the capture interface to use")
+    parser.add_argument('-I', '--ignore', action='append', help="mac address to ignore")
+    parser.add_argument('-s', '--stdout', action='store_true', default=False, help="also log probe request to stdout")
+    parser.add_argument('-v', '--version', action='store_true', default=False, help="show version and exit")
+    args = parser.parse_args()
 
-        if args.version:
-            print(f"{NAME} {VERSION}\n© 2018-2020 solsTiCe d'Hiver, GPL 3 licensed")
-            sys.exit(1)
+    if args.version:
+        print(f"{NAME} {VERSION}\n© 2018-2020 solsTiCe d'Hiver, GPL 3 licensed")
+        sys.exit(1)
 
-        if not args.interface:
-            print('Error: argument -i/--interface is required', file=sys.stderr)
-            sys.exit(-1)
+    if not args.interface:
+        print('Error: argument -i/--interface is required', file=sys.stderr)
+        sys.exit(-1)
 
-        if args.ignore is not None:
-            config['ignored'] = args.ignore
+    if args.ignore is not None:
+        config['ignored'] = args.ignore
 
-        # only import scapy here to avoid delay if error in argument parsing
-        print('Loading scapy...')
-        from scapy.all import sniff
-        from scapy.error import Scapy_Exception
+    # only import scapy here to avoid delay if error in argument parsing
+    print('Loading scapy...')
+    from scapy.all import sniff
+    from scapy.error import Scapy_Exception
 
-        signal.signal(signal.SIGTERM, sig_handler)
-        signal.signal(signal.SIGQUIT, sig_handler)
+    signal.signal(signal.SIGTERM, sig_handler)
+    signal.signal(signal.SIGQUIT, sig_handler)
+    signal.signal(signal.SIGINT, sig_handler)
 
-        main()
-    except KeyboardInterrupt as k:
-        pass
+    main()
 
 # vim: set et ts=4 sw=4:

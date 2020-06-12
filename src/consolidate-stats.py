@@ -45,7 +45,7 @@ def init_stats(conn, c):
         conn.commit()
     except sqlite3.OperationalError as o:
         print(f'Error: {o}', file=sys.stderr)
-        sys.exit(-1)
+        sys.exit(1)
 
 def gather_day_stats_for_mac(mac_id, day, c):
     start = time.mktime(time.strptime(f'{day}T00:00:00', '%Y-%m-%dT%H:%M:%S'))
@@ -111,7 +111,7 @@ def main():
                     day = datetime.strptime(args.day, '%Y%m%d')
                 except ValueError:
                     print(f"Error: can't parse day (expected format: YYYY-mm-dd)", file=sys.stderr)
-                    sys.exit(-1)
+                    sys.exit(1)
             day = date(day.year, day.month, day.day)
             print(f'Collecting data for all macs for {args.day}')
             gather_stats_day(day, conn, c)
@@ -137,6 +137,8 @@ def main():
         if args.init:
             print('\b'*10, flush=True)
         print(f'Error: {e}', file=sys.stderr)
+        conn.close()
+        sys.exit(1)
 
     conn.close()
 

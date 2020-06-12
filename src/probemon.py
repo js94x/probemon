@@ -220,7 +220,7 @@ def build_packet_cb(ignored):
             ssid = 'b64_%s' % base64.b64encode(packet.info).decode()
         fields = [packet.time, packet.addr2, ssid, rssi]
 
-        if packet.addr2 not in ignored:
+        if packet.addr2 not in ignored and not event.is_set():
             with lock:
                 queue.append(fields)
 

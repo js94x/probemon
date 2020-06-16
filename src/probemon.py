@@ -12,6 +12,7 @@ from lru import LRU
 import signal
 import struct
 import threading
+import queue
 from yaml import load as yaml_load
 try:
     from yaml import CLoader as Loader
@@ -23,7 +24,7 @@ DESCRIPTION = "a command line tool for logging 802.11 probe requests"
 VERSION = '0.7.2'
 
 MANUF_FILE = './manuf'
-MAX_QUEUE_LENGTH = 50
+MAX_QUEUE_LENGTH = 1024 # just in case
 MAX_ELAPSED_TIME = 60 # seconds
 MAX_VENDOR_LENGTH = 25
 MAX_SSID_LENGTH = 15
@@ -72,32 +73,34 @@ def print_fields(fields):
     print('%s\t%s\t%s\t%s\t%d' % tuple(fields))
 
 class MyQueue:
-    def __init__(self):
-        self.values = []
+    def __init__(self, max_size=0):
+        self.queue = queue.Queue(max_size)
 
     def append(self, fields):
-        self.values.append(fields)
+        self.queue.put(fields)
 
     def commit(self, stdout, conn, c):
-        for fields in self.values:
+        while not self.queue.empty():
+            fields = self.queue.get()
             date, mac, ssid, rssi = fields
             # look up vendor from OUI value in MAC address
             vendor = vendor_db.get_manuf_long(mac)
             if vendor is None:
                 vendor = 'UNKNOWN'
             fields.insert(2, vendor)
-            insert_into_db(fields, conn, c)
+            try:
+                insert_into_db(fields, conn, c)
+            except sqlite3.OperationalError as e:
+                del fields[2]
+                # re-insert in queue to process it later
+                self.queue.put(fields)
+                print(f'Error: {e}')
             if stdout:
                 print_fields(fields)
 
-        self.clear()
-
-    def clear(self):
-        del self.values[:]
-
 # globals
 cache = MyCache(128)
-queue = MyQueue()
+queue = MyQueue(MAX_QUEUE_LENGTH)
 vendor_db = None
 start_ts = time.monotonic()
 lock = threading.Lock()

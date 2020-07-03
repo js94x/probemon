@@ -85,7 +85,7 @@ void *process_queue(void *args)
       char *tmp = str_replace(pr->mac, ":", "");
       uint64_t mac_number = strtoll(tmp, NULL, 16);
       free(tmp);
-      res = bsearch(&mac_number, ignored, sizeof(uint64_t), ignored_count, cmp_uint64_t);
+      res = bsearch(&mac_number, ignored, ignored_count, sizeof(uint64_t), cmp_uint64_t);
     }
     if (res == NULL) {
       insert_probereq(*pr, db, mac_pk_cache, ssid_pk_cache);

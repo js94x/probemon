@@ -341,38 +341,29 @@ $(function() {
             // but use a table for mobile
             var macs = '', c = 0, color;
             var gen = colorGenerator();
-            for (let d of data) {
-              if (d.getKnown()) {
-                color = '#d62728';
-              } else if (d.getMac() == 'LAA') {
-                color = '#7f7f7f';
-              } else {
-                color = gen.next().value;
-              }
+            for (let i=0; i<_ds.length; i++) {
+              color = _ds[i].pointBorderColor;
               var min = 100, max= -100, avg = 0, rssis = [];
-              var prl = d.getProbereqList();
+              var prl = _ds[i].data;
               for (let p of prl) {
-                min = Math.min(min, p.getRssi());
-                max = Math.max(max, p.getRssi());
-                avg += p.getRssi();
-                rssis.push(p.getRssi());
+                min = Math.min(min, p.rssi);
+                max = Math.max(max, p.rssi);
+                avg += p.rssi;
+                rssis.push(p.rssi);
               }
-              var ssids = [];
-              for (let s of d.getSsidsList()) {
-                ssids.push(s.getName());
-              }
+              var ssids = _ds[i].ssids;
               if (ssids.indexOf('') > -1) {
                 ssids.splice(ssids.indexOf(''), 1);
               }
               macs += '<tr class="small-mono mac-stats"><td style="background-color:'+color+'"></td>';
-              macs += '<td>'+d.getMac()+'</td>';
+              macs += '<td>'+_ds[i].label+'</td>';
               macs += '<td>'+prl.length+'</td>';
               macs += '<td>'+min+'</td>';
               macs += '<td>'+max+'</td>';
               macs += '<td>'+(avg/prl.length).toFixed(1)+'</td>';
               macs += '<td>'+median(rssis)+'</td>';
-              macs += '<td class="ts">'+moment(prl[0].getTimestamp()).format('HH:mm:ss')+'</td>';
-              macs += '<td class="ts">'+moment(prl[prl.length-1].getTimestamp()).format('HH:mm:ss')+'</td>';
+              macs += '<td class="ts">'+moment(prl[0].x).format('HH:mm:ss')+'</td>';
+              macs += '<td class="ts">'+moment(prl[prl.length-1].x).format('HH:mm:ss')+'</td>';
               macs += '<td>'+(ssids.join(', ')||'&lt;none&gt;')+'</td></tr>';
             }
             $('#macs').html(macs);

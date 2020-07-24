@@ -295,6 +295,7 @@ def create_app():
         sql = 'pragma temp_store = 2;'
         cur.execute(sql)
 
+        now = time.time()
         sql, sql_args = build_sql_query(after, before, macs, rssi, zero, today)
         try:
             cur.execute(sql, sql_args)
@@ -303,10 +304,18 @@ def create_app():
 
         vendor = {}
         ts = {}
+        if after is not None:
+            starting_ts = int(after*1000)
+        elif today:
+            starting_ts = int((now-24*60*60)*1000)
+        else:
+            sql = 'select date from probemon order by date limit 1;'
+            c.execute(sql)
+            starting_ts = int(c.fetchone()[0]*1000)
         # extract data from db
         for t, mac, vs, ssid, rssi in cur.fetchall():
             #t = time.strftime('%Y-%m-%dT%H:%M:%S', time.localtime(t))
-            d = (t, int(rssi), ssid)
+            d = (int(t*1000-starting_ts), int(rssi), ssid)
             if is_local_bit_set(mac):
                 mac = 'LAA'
             if mac not in ts.keys():
@@ -322,16 +331,16 @@ def create_app():
                 continue # will deal with them later
             known = m in config['knownmac']
             ssids = list(set(f[2] for f in ts[m]))
-            t = {'mac':m, 'known': known, 'vendor': vendor[m], 'ssids': ssids,
-                'probereq': [{'ts': int(f[0]*1000), 'rssi':f[1], 'ssid': ssids.index(f[2])} for f in ts[m]]}
+            t = {'mac':m, 'known': known, 'vendor': vendor[m], 'ssids': ssids, 'starting_ts': starting_ts,
+                'probereq': [{'ts': f[0], 'rssi':f[1], 'ssid': ssids.index(f[2])} for f in ts[m]]}
             if len(t['probereq']) > 3:
                 data.append(t)
         data.sort(key=lambda x:len(x['probereq']), reverse=True)
         # LAA
         if 'LAA' in ts.keys():
             ssids = list(set(f[2] for f in ts['LAA']))
-            t = {'mac':'LAA', 'vendor': u'UNKNOWN', 'ssids': ssids,
-                'probereq': [{'ts': int(f[0]*1000), 'rssi':f[1], 'ssid': ssids.index(f[2])} for f in ts['LAA']]}
+            t = {'mac':'LAA', 'vendor': u'UNKNOWN', 'ssids': ssids, 'starting_ts': starting_ts,
+                'probereq': [{'ts': f[0], 'rssi':f[1], 'ssid': ssids.index(f[2])} for f in ts['LAA']]}
             data.append(t)
         # MERGED
         for m in config['merged']:
@@ -343,8 +352,8 @@ def create_app():
             if len(p) == 0:
                 continue
             p.sort(key=lambda x: x[0])
-            t = {'mac':m, 'vendor': u'UNKNOWN', 'ssids': ssids,
-                'probereq': [{'ts': int(f[0]*1000), 'rssi':f[1], 'ssid': ssids.index(f[2])} for f in p]}
+            t = {'mac':m, 'vendor': u'UNKNOWN', 'ssids': ssids, 'starting_ts': starting_ts,
+                'probereq': [{'ts': f[0], 'rssi':f[1], 'ssid': ssids.index(f[2])} for f in p]}
             data.append(t)
 
         if output == 'json':
@@ -355,6 +364,7 @@ def create_app():
                 p = res.probes.add()
                 p.mac = t['mac']
                 p.vendor = t['vendor']
+                p.starting_ts = t['starting_ts']
                 for s in t['ssids']:
                     sl = p.ssids.add()
                     sl.name = s

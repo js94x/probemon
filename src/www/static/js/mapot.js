@@ -78,8 +78,9 @@ $(function() {
         borderWidth: 1,
         borderColor: color+'44', // same as plot but with less alpha
       };
+      var starting_ts = d.getStartingTs();
       for (let p of d.getProbereqList()) {
-        s.data.push({'x': p.getTimestamp(), 'y': data.length-1-n, 'rssi': p.getRssi(), 'ssid': p.getSsid()});
+        s.data.push({'x': p.getTimestamp()+starting_ts, 'y': data.length-1-n, 'rssi': p.getRssi(), 'ssid': p.getSsid()});
       }
       ds.push(s);
       n += 1;
@@ -338,7 +339,7 @@ $(function() {
             }
           } else {
             $('#msg').text('Analyzing data...');
-            // but use a table for mobile
+            // don't show the chart on mobile, but use a table
             var macs = '', c = 0, color;
             var gen = colorGenerator();
             for (let i=0; i<_ds.length; i++) {

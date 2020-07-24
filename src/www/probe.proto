@@ -11,13 +11,14 @@ message Probes {
   }
   repeated Ssid ssids = 4;
 
+  uint64 starting_ts = 5;
   message Probereq {
-    int64 timestamp = 1;
+    int32 timestamp = 1;
     sint32 rssi = 2;
     int32 ssid = 3;
   }
 
-  repeated Probereq probereq = 5;
+  repeated Probereq probereq = 6;
 }
 
 message MyData {

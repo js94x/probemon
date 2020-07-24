@@ -291,7 +291,7 @@ $(function() {
     updateDBTime();
     $('#loading').show();
     _mac = null; // to force update of modal data
-    $('#msg').finish().addClass('alert-info').removeClass('alert-danger').show();
+    $('#msg').finish().addClass('alert-info').removeClass('alert-danger').text('Downloading data ...').show();
     // disable temporarly the datepicker
     $('#dp').datepicker('setStartDate', date).datepicker('setEndDate', date).datepicker('update', date);
     // disable refresh button
@@ -317,7 +317,7 @@ $(function() {
 
           if (data.length == 0) {
             $('#msg').removeClass('alert-info').addClass('alert-danger').text('No data found');
-            $('#msg').fadeOut(5000, function() { $('#msg').text('Downloading data...'); });
+            $('#msg').fadeOut(5000);
             $('#loading').hide();
             if (chart !== null) {
               chart.clear();
@@ -382,13 +382,13 @@ $(function() {
               updateRSSIModal(_ds[indx]);
             });
           }
-          $('#msg').hide().text('Downloading data...');
+          $('#msg').hide();
         });
       }
     }).catch(function(error){
       $('#loading').hide();
       $('#msg').removeClass('alert-info').addClass('alert-danger').text('An error occured when downloading data');
-      $('#msg').fadeOut(5000, function() { $('#msg').text('Downloading data...'); });
+      $('#msg').fadeOut(5000);
     }).finally(function() {
       // restore datepicker back to original state
       $('#dp').datepicker('setStartDate', false).datepicker('setEndDate', today).datepicker('update', date);

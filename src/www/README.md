@@ -24,7 +24,7 @@ Then run it with:
 
     gunicorn -w 4 -b 127.0.0.1:5556 mapot:app
 
-You can look at other **options** on how to run the *app* in [the flask documentation](http://flask.pocoo.org/docs/1.0/deploying/).
+You can look at other **options** on how to run the *app* in [the flask documentation](https://flask.palletsprojects.com/en/1.1.x/deploying/).
 
 ## The UI
 The main UI is a time chart with the probe requests displayed for the last 24 hours.

@@ -1,5 +1,5 @@
 $(function() {
-  var _chart = null, _rssi = null, _ds = null, _mac = null, _firstseen, _lastseen;
+  var _chart = null, _rssi = null, _ds = null, _mac = null, _firstseen = null, _lastseen = null, _can_refresh = false;
   var tableau = ['#1f77b4', '#ff7f0e', '#2ca02c', /*'#d62728',*/ '#9467bd',
     '#8c564b', '#e377c2', /*'#7f7f7f',*/ '#bcbd22', '#17becf'];
 
@@ -42,50 +42,133 @@ $(function() {
     });
   }
 
-  function repack(data) {
-    var ds = [], n = 0;
-    var diameter = ($('#main-chart').height()-50)/data.length-6;
+  function compare_rssi(a, b) {
+    // sort by rssi number values and put LAA at the end with merged mac
+    var xa = 3; xb = 3;
+    if (a.label == "LAA") xa = 2;
+    if (b.label == "LAA") xb = 2;
+    if (a.label.length == 8) xa = 1;
+    if (b.label.length == 8) xb = 1;
+    if (xa > xb) return -1;
+    if (xa < xb) return 1;
+    if (a.data.length > b.data.length) return -1;
+    if (a.data.length < b.data.length) return 1;
+    return 0;
+  }
 
-    // repurpose our data in a format suitable for chart.js chart
-    var gen = colorGenerator(), color;
+  function ts_bounds() {
+    var first_seen = Number.MAX_SAFE_INTEGER;
+    var last_seen = 0;
+    for (let p of _ds) {
+      // assuming data sorted by timestamp
+      first_seen = Math.min(first_seen, p.data[0].x);
+      last_seen = Math.max(last_seen, p.data[p.data.length-1].x);
+    }
+    return {'first_seen': first_seen, 'last_seen': last_seen};
+  }
+
+  function update_data(data, new_start_ts) {
+    // trim unneeded timestamp data
+    for (let i=0; i<_ds.length; i++) {
+      var cd = _ds[i].data;
+      var n = 0
+      while (n < cd.length && cd[n].x < new_start_ts) {
+        n++;
+      }
+      cd.splice(0, n);
+    }
     for (let d of data) {
-      if (d.getKnown()) {
+      // look for that mac in _ds
+      var found = false, indx = null;
+      for (let i=0; i<_ds.length; i++) {
+        if (_ds[i].label == d.getMac()) {
+          found = true;
+          indx = i;
+          break;
+        }
+      }
+      if (found) {
+        var ssids = [];
+        for (let s of d.getSsidsList()) {
+          var ssid = s.getName();
+          ssids.push(ssid);
+          if (_ds[indx].ssids.indexOf(ssid) == -1) {
+            _ds[indx].ssids.push(ssid);
+          }
+        }
+        var y = _ds[indx].data[0].y;
+        var starting_ts = d.getStartingTs();
+        var ns = [];
+        for (let p of d.getProbereqList()) {
+          // fix ssid number
+          var si = _ds[indx].ssids.indexOf(ssids[p.getSsid()]);
+          var q = {'x': p.getTimestamp()+starting_ts, 'y': y, 'rssi': p.getRssi(), 'ssid': si};
+          ns.push(q);
+        }
+        // append new data
+        _ds[indx].data = _ds[indx].data.concat(ns);
+      } else {
+        var ssids = [];
+        for (let s of d.getSsidsList()) {
+          ssids.push(s.getName());
+        }
+        var s = {
+          label: d.getMac(),
+          vendor: d.getVendor(),
+          ssids: ssids,
+          known: d.getKnown(),
+          data: [],
+          fill: false,
+          pointStyle: 'line',
+          pointRotation: 90,
+          pointBorderColor: color,
+          showLine: true,
+          borderWidth: 1,
+        };
+        var starting_ts = d.getStartingTs();
+        var y = _ds.length;
+        for (let p of d.getProbereqList()) {
+          s.data.push({'x': p.getTimestamp()+starting_ts, 'y': y, 'rssi': p.getRssi(), 'ssid': p.getSsid()});
+        }
+        _ds.push(s);
+      }
+    }
+    // remove chart with no timestamp anymore
+    var empty = [];
+    for (let i=0; i<_ds.length; i++) {
+      if (_ds[i].data.length == 0) {
+        empty.push(i);
+      }
+    }
+    for (let i of empty.reverse()) {
+      _ds.splice(i, 1);
+    }
+    // sort _ds on rssi number values; put LAA and merged at the end
+    _ds.sort(compare_rssi);
+    // fix y coord and diameter and color
+    var gen = colorGenerator(), color;
+    var diameter = ($('#main-chart').height()-50)/_ds.length-6;
+    for (let i=0; i<_ds.length; i++) {
+      _ds[i].pointRadius = diameter/2;
+      _ds[i].pointHoverRadius = diameter/2;
+      color = _ds[i].pointBorderColor;
+      if (_ds[i].known) {
         color = '#d62728';
-      } else if (d.getMac() == 'LAA') {
+      } else if (_ds[i].label == 'LAA') {
         color = '#7f7f7f';
       } else {
         color = gen.next().value;
       }
-      var ssids = [];
-      for (let s of d.getSsidsList()) {
-        ssids.push(s.getName());
+      _ds[i].pointBorderColor = color;
+      _ds[i].pointHoverRadius = color;
+      _ds[i].pointHoverBorderColor = color;
+      _ds[i].pointHoverBackgroundColor = color;
+      _ds[i].backgroundColor = color;
+      _ds[i].borderColor = color+'44';
+      for (let t of _ds[i].data) {
+        t.y = _ds.length-1-i;
       }
-      var s = {
-        label: d.getMac(),
-        vendor: d.getVendor(),
-        ssids: ssids,
-        data: [],
-        fill: false,
-        pointStyle: 'line',
-        pointRadius: diameter/2,
-        pointRotation: 90,
-        pointBorderColor: color,
-        pointHoverRadius: diameter/2,
-        pointHoverBorderColor: color,
-        pointHoverBackgroundColor: color,
-        backgroundColor: color, // for automatic legend only
-        showLine: true,
-        borderWidth: 1,
-        borderColor: color+'44', // same as plot but with less alpha
-      };
-      var starting_ts = d.getStartingTs();
-      for (let p of d.getProbereqList()) {
-        s.data.push({'x': p.getTimestamp()+starting_ts, 'y': data.length-1-n, 'rssi': p.getRssi(), 'ssid': p.getSsid()});
-      }
-      ds.push(s);
-      n += 1;
     }
-    return ds;
   }
 
   function drawRSSIChart(dataset, color) {
@@ -298,12 +381,22 @@ $(function() {
     // disable refresh button
     $('#refresh').attr('disabled', 'disabled');
 
-    var url;
+    var url, is_refreshed = false;
     if (typeof after == 'undefined' || typeof before == 'undefined') {
-      url = '/api/probes?today=true';
+      if (!_can_refresh) {
+        url = '/api/probes?today=true';
+        _can_refresh = true;
+      } else {
+        is_refreshed = true;
+        var bounds = ts_bounds();
+        var before = moment().format('YYYY-MM-DDTHH:mm:ss');
+        var after = moment(bounds.last_seen).format('YYYY-MM-DDTHH:mm:ss');
+        url = '/api/probes?after='+after+'&before='+before;
+      }
       _firstseen = moment().subtract(1, 'days').valueOf();
       _lastseen = moment().valueOf();
     } else {
+      _can_refresh = false;
       url = '/api/probes?after='+after+'&before='+before;
       _firstseen = moment(after).valueOf()
       _lastseen = moment(before).valueOf();
@@ -318,9 +411,9 @@ $(function() {
 
           if (data.length == 0) {
             $('#msg').removeClass('alert-info').addClass('alert-danger').text('No data found');
-            $('#msg').fadeOut(5000);
+            $('#msg').fadeOut(5000, function() {$('#msg').removeClass('alert-danger').addClass('alert-info');});
             $('#loading').hide();
-            if (chart !== null) {
+            if (chart !== null && !is_refreshed) {
               chart.clear();
               _ds = [];
             }
@@ -328,7 +421,10 @@ $(function() {
           }
           $('#loading').hide();
           $('#msg').text('Repacking data...');
-          _ds = repack(data);
+          if (!is_refreshed) {
+            _ds = [];
+          }
+          update_data(data, _firstseen);
           if ($('#main-chart').is(':visible')) {
             // don't show the chart on mobile
             $('#msg').text('Drawing data...');

@@ -57,6 +57,7 @@ $(function() {
   }
 
   function ts_bounds() {
+    if (_ds == null) return null;
     var first_seen = Number.MAX_SAFE_INTEGER;
     var last_seen = 0;
     for (let p of _ds) {
@@ -126,9 +127,8 @@ $(function() {
           borderWidth: 1,
         };
         var starting_ts = d.getStartingTs();
-        var y = _ds.length;
         for (let p of d.getProbereqList()) {
-          s.data.push({'x': p.getTimestamp()+starting_ts, 'y': y, 'rssi': p.getRssi(), 'ssid': p.getSsid()});
+          s.data.push({'x': p.getTimestamp()+starting_ts, 'y': _ds.length, 'rssi': p.getRssi(), 'ssid': p.getSsid()});
         }
         _ds.push(s);
       }
@@ -140,7 +140,8 @@ $(function() {
         empty.push(i);
       }
     }
-    for (let i of empty.reverse()) {
+    empty.reverse();
+    for (let i of empty) {
       _ds.splice(i, 1);
     }
     // sort _ds on rssi number values; put LAA and merged at the end
@@ -151,7 +152,6 @@ $(function() {
     for (let i=0; i<_ds.length; i++) {
       _ds[i].pointRadius = diameter/2;
       _ds[i].pointHoverRadius = diameter/2;
-      color = _ds[i].pointBorderColor;
       if (_ds[i].known) {
         color = '#d62728';
       } else if (_ds[i].label == 'LAA') {
@@ -361,12 +361,6 @@ $(function() {
     });
   }
 
-  function updateMainChart(chart, ds) {
-    chart.data.datasets = ds;
-    chart.options.scales.yAxes[0].ticks.max = ds.length;
-    chart.update();
-  }
-
   function refresh(chart, date, after, before) {
     // don't do anything if the modal is opened
     if (($("#main-modal").data('bs.modal') || {})._isShown) {
@@ -383,12 +377,12 @@ $(function() {
 
     var url, is_refreshed = false;
     if (typeof after == 'undefined' || typeof before == 'undefined') {
-      if (!_can_refresh) {
+      var bounds = ts_bounds();
+      if (bounds == null || !_can_refresh) {
         url = '/api/probes?today=true';
         _can_refresh = true;
       } else {
         is_refreshed = true;
-        var bounds = ts_bounds();
         var before = moment().format('YYYY-MM-DDTHH:mm:ss');
         var after = moment(bounds.last_seen).format('YYYY-MM-DDTHH:mm:ss');
         url = '/api/probes?after='+after+'&before='+before;
@@ -414,25 +408,20 @@ $(function() {
             $('#msg').fadeOut(5000, function() {$('#msg').removeClass('alert-danger').addClass('alert-info');});
             $('#loading').hide();
             if (chart !== null && !is_refreshed) {
-              chart.clear();
+              chart.destroy();
               _ds = [];
             }
             return false;
           }
           $('#loading').hide();
           $('#msg').text('Repacking data...');
-          if (!is_refreshed) {
-            _ds = [];
-          }
+          if (!is_refreshed) _ds = [];
+          if (chart !== null) chart.destroy();
           update_data(data, _firstseen);
           if ($('#main-chart').is(':visible')) {
             // don't show the chart on mobile
             $('#msg').text('Drawing data...');
-            if (chart === null) {
-              drawMainChart(ctx, _ds);
-            } else {
-              updateMainChart(chart, _ds);
-            }
+            drawMainChart(ctx, _ds);
           } else {
             $('#msg').text('Analyzing data...');
             // don't show the chart on mobile, but use a table
@@ -448,7 +437,7 @@ $(function() {
                 avg += p.rssi;
                 rssis.push(p.rssi);
               }
-              var ssids = _ds[i].ssids;
+              var ssids = _ds[i].ssids.slice();
               if (ssids.indexOf('') > -1) {
                 ssids.splice(ssids.indexOf(''), 1);
               }

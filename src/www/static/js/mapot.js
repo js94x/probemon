@@ -361,6 +361,51 @@ $(function() {
     });
   }
 
+  function updateTable(ds) {
+    var macs = '', c = 0, color;
+    var gen = colorGenerator();
+    for (let i=0; i<ds.length; i++) {
+      color = ds[i].pointBorderColor;
+      var min = 100, max= -100, avg = 0, rssis = [];
+      var prl = ds[i].data;
+      for (let p of prl) {
+        min = Math.min(min, p.rssi);
+        max = Math.max(max, p.rssi);
+        avg += p.rssi;
+        rssis.push(p.rssi);
+      }
+      var ssids = ds[i].ssids.slice();
+      if (ssids.indexOf('') > -1) {
+        ssids.splice(ssids.indexOf(''), 1);
+      }
+      macs += '<tr class="small-mono mac-stats"><td style="background-color:'+color+'"></td>';
+      macs += '<td>'+ds[i].label+'</td>';
+      macs += '<td>'+prl.length+'</td>';
+      macs += '<td>'+min+'</td>';
+      macs += '<td>'+max+'</td>';
+      macs += '<td>'+(avg/prl.length).toFixed(1)+'</td>';
+      macs += '<td>'+median(rssis)+'</td>';
+      macs += '<td class="ts">'+moment(prl[0].x).format('HH:mm:ss')+'</td>';
+      macs += '<td class="ts">'+moment(prl[prl.length-1].x).format('HH:mm:ss')+'</td>';
+      macs += '<td>'+(ssids.join(', ')||'&lt;none&gt;')+'</td></tr>';
+    }
+    $('#macs').html(macs);
+    // but use the same modal
+    $('.mac-stats').click(function(e) {
+      e.preventDefault();
+      $('#main-modal').show();
+      var mac = $(this).children('td').eq(1).text();
+      var indx = 0;
+      for (let d of ds) {
+        if (d.label == mac) {
+          break;
+        }
+        indx += 1;
+      }
+      updateRSSIModal(ds[indx]);
+    });
+  }
+
   function refresh(chart, date, after, before) {
     // don't do anything if the modal is opened
     if (($("#main-modal").data('bs.modal') || {})._isShown) {
@@ -419,54 +464,13 @@ $(function() {
           if (chart !== null) chart.destroy();
           update_data(data, _firstseen);
           if ($('#main-chart').is(':visible')) {
-            // don't show the chart on mobile
+            // on desktop
             $('#msg').text('Drawing data...');
             drawMainChart(ctx, _ds);
           } else {
             $('#msg').text('Analyzing data...');
             // don't show the chart on mobile, but use a table
-            var macs = '', c = 0, color;
-            var gen = colorGenerator();
-            for (let i=0; i<_ds.length; i++) {
-              color = _ds[i].pointBorderColor;
-              var min = 100, max= -100, avg = 0, rssis = [];
-              var prl = _ds[i].data;
-              for (let p of prl) {
-                min = Math.min(min, p.rssi);
-                max = Math.max(max, p.rssi);
-                avg += p.rssi;
-                rssis.push(p.rssi);
-              }
-              var ssids = _ds[i].ssids.slice();
-              if (ssids.indexOf('') > -1) {
-                ssids.splice(ssids.indexOf(''), 1);
-              }
-              macs += '<tr class="small-mono mac-stats"><td style="background-color:'+color+'"></td>';
-              macs += '<td>'+_ds[i].label+'</td>';
-              macs += '<td>'+prl.length+'</td>';
-              macs += '<td>'+min+'</td>';
-              macs += '<td>'+max+'</td>';
-              macs += '<td>'+(avg/prl.length).toFixed(1)+'</td>';
-              macs += '<td>'+median(rssis)+'</td>';
-              macs += '<td class="ts">'+moment(prl[0].x).format('HH:mm:ss')+'</td>';
-              macs += '<td class="ts">'+moment(prl[prl.length-1].x).format('HH:mm:ss')+'</td>';
-              macs += '<td>'+(ssids.join(', ')||'&lt;none&gt;')+'</td></tr>';
-            }
-            $('#macs').html(macs);
-            // but use the same modal
-            $('.mac-stats').click(function(e) {
-              e.preventDefault();
-              $('#main-modal').show();
-              var mac = $(this).children('td').eq(1).text();
-              var indx = 0;
-              for (let d of _ds) {
-                if (d.label == mac) {
-                  break;
-                }
-                indx += 1;
-              }
-              updateRSSIModal(_ds[indx]);
-            });
+            updateTable(_ds);
           }
           $('#msg').hide();
         });

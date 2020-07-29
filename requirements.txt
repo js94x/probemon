@@ -1,5 +1,5 @@
 scapy
-manuf-ng
+manuf
 matplotlib
 lru-dict
 pyyaml

@@ -8,7 +8,7 @@ This rewritten version of *probemon* uses an sqlite3 DB like in *probeSniffer*, 
 There is a **flask app** `mapot.py` to serve charts/plots and stats of the sqlite3 db, in real time. An alternative is to use the other provided python tools: `plot.py` and `stats.py`.
 
 The dependencies are:
-* for probemon.py: scapy, manuf-ng, lru-dict
+* for probemon.py: scapy, manuf, lru-dict
 * for mapot.py: flask, flask-caching
 * for stats.py: None
 * for plot.py: matplotlib, cycler

@@ -366,9 +366,8 @@ $(function() {
 
   function updateTable(ds) {
     var macs = '', c = 0, color;
-    var gen = colorGenerator();
     for (let i=0; i<ds.length; i++) {
-      color = ds[i].pointBorderColor;
+      var color = ds[i].pointBorderColor;
       var min = 100, max= -100, avg = 0, rssis = [];
       var prl = ds[i].data;
       for (let p of prl) {
@@ -381,16 +380,17 @@ $(function() {
       if (ssids.indexOf('') > -1) {
         ssids.splice(ssids.indexOf(''), 1);
       }
-      macs += '<tr class="small-mono mac-stats"><td style="background-color:'+color+'"></td>';
-      macs += '<td>'+ds[i].label+'</td>';
-      macs += '<td>'+prl.length+'</td>';
-      macs += '<td>'+min+'</td>';
-      macs += '<td>'+max+'</td>';
-      macs += '<td>'+(avg/prl.length).toFixed(1)+'</td>';
-      macs += '<td>'+median(rssis)+'</td>';
-      macs += '<td class="ts">'+moment(prl[0].x).format('HH:mm:ss')+'</td>';
-      macs += '<td class="ts">'+moment(prl[prl.length-1].x).format('HH:mm:ss')+'</td>';
-      macs += '<td>'+(ssids.join(', ')||'&lt;none&gt;')+'</td></tr>';
+      macs += '<tr class="small-mono mac-stats">';
+      macs += '<td style="border-bottom: solid 1px '+color+';background-color:'+color+'"></td>';
+      macs += '<td style="border-bottom: solid 1px '+color+'">'+ds[i].label+'</td>';
+      macs += '<td style="border-bottom: solid 1px '+color+'">'+prl.length+'</td>';
+      macs += '<td style="border-bottom: solid 1px '+color+'">'+min+'</td>';
+      macs += '<td style="border-bottom: solid 1px '+color+'">'+max+'</td>';
+      macs += '<td style="border-bottom: solid 1px '+color+'">'+(avg/prl.length).toFixed(1)+'</td>';
+      macs += '<td style="border-bottom: solid 1px '+color+'">'+median(rssis)+'</td>';
+      macs += '<td style="border-bottom: solid 1px '+color+'" class="ts">'+moment(prl[0].x).format('HH:mm:ss')+'</td>';
+      macs += '<td style="border-bottom: solid 1px '+color+'" class="ts">'+moment(prl[prl.length-1].x).format('HH:mm:ss')+'</td>';
+      macs += '<td style="border-bottom: solid 1px '+color+'">'+(ssids.join(', ')||'&lt;none&gt;')+'</td></tr>';
     }
     $('#macs').html(macs);
     // but use the same modal

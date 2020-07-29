@@ -607,8 +607,8 @@ $(function() {
             var elmt = data['logs'][i];
             var mac = data['macs'][elmt[1]][0];
             var is_laa = Boolean(parseInt(mac.substring(0, 2), 16) & 0x2);
-            html += '<tr><td>'+ts+'</td><td '+(is_laa? 'class="laa" ':'')+'title="'+data['macs'][elmt[1]][1]+'">'+mac;
-            html += '</td><td>'+data['ssids'][elmt[2]]+'</td><td>'+elmt[3]+'</td></tr>';
+            html += '<tr><td class="hour">'+ts+'</td><td class="mac'+(is_laa? ' laa':'')+'" title="'+data['macs'][elmt[1]][1]+'">'+mac;
+            html += '</td><td class="rssi">'+elmt[3]+'</td><td>'+data['ssids'][elmt[2]]+'</td></tr>';
           }
         } else {
           html = '<tr><td>No probe requests logged</td></tr>';

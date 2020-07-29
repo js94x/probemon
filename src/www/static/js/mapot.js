@@ -97,7 +97,10 @@ $(function() {
             _ds[indx].ssids.push(ssid);
           }
         }
-        var y = _ds[indx].data[0].y;
+        var y = _ds.length;
+        if (_ds[indx].data.length != 0) {
+          y = _ds[indx].data[0].y;
+        }
         var starting_ts = d.getStartingTs();
         var ns = [];
         for (let p of d.getProbereqList()) {

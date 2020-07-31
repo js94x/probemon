@@ -236,15 +236,16 @@ def main():
                         m['max'] = rmax
                     m['avg'].append(ravg)
                     m['med'].append(rmed)
-                laa = ' (LAA)' if is_local_bit_set(m['address']) else ''
-                print(f'MAC: {m["address"]}{laa}, VENDOR: {m["vendor"]}')
-                if '' in m['ssids']:
-                    m['ssids'].remove('')
-                print(f'  SSIDs: {",".join(sorted(list(m["ssids"])))}')
-                avg = sum([a*b for a,b in zip(m['avg'], m['count'])])//sum(m['count'])
-                med = sum([a*b for a,b in zip(m['med'], m['count'])])//sum(m['count'])
-                print(f'  RSSI: #: {sum(m["count"]):4d}, min: {m["min"]:3d}, max: {m["max"]:3d}, avg: {avg:3d}, median: {med:3d}')
-                print(f'  First seen at {m["first"]} and last seen at {m["last"]}')
+                if len(m['count']) > 0:
+                    laa = ' (LAA)' if is_local_bit_set(m['address']) else ''
+                    print(f'MAC: {m["address"]}{laa}, VENDOR: {m["vendor"]}')
+                    if '' in m['ssids']:
+                        m['ssids'].remove('')
+                    print(f'  SSIDs: {",".join(sorted(list(m["ssids"])))}')
+                    avg = sum([a*b for a,b in zip(m['avg'], m['count'])])//sum(m['count'])
+                    med = sum([a*b for a,b in zip(m['med'], m['count'])])//sum(m['count'])
+                    print(f'  RSSI: #: {sum(m["count"]):4d}, min: {m["min"]:3d}, max: {m["max"]:3d}, avg: {avg:3d}, median: {med:3d}')
+                    print(f'  First seen at {m["first"]} and last seen at {m["last"]}')
             conn.close()
             return
 

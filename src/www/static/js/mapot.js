@@ -589,6 +589,7 @@ $(function() {
     var chosen_date = moment($('#dp').datepicker('getDate')).format('YYYY-MM-DD');
     $('#rawlogs-day').text(chosen_date);
     $('#rawlog-modal').modal('show');
+    $('#nobroadcast').prop('checked', false);
 
     $('[id^="rawlog-"][id$="-link"]').on('click', function(e) {
       var chosen_date = moment($('#dp').datepicker('getDate')).format('YYYY-MM-DD');
@@ -607,8 +608,9 @@ $(function() {
             var elmt = data['logs'][i];
             var mac = data['macs'][elmt[1]][0];
             var is_laa = Boolean(parseInt(mac.substring(0, 2), 16) & 0x2);
-            html += '<tr><td class="hour">'+ts+'</td><td class="mac'+(is_laa? ' laa':'')+'" title="'+data['macs'][elmt[1]][1]+'">'+mac;
-            html += '</td><td class="rssi">'+elmt[3]+'</td><td>'+data['ssids'][elmt[2]]+'</td></tr>';
+            var ssid = data['ssids'][elmt[2]];
+            html += '<tr'+(ssid==''? ' class="broadcast"':'' )+'><td class="hour">'+ts+'</td><td class="mac'+(is_laa? ' laa':'')+'" title="'+data['macs'][elmt[1]][1]+'">'+mac;
+            html += '</td><td class="rssi">'+elmt[3]+'</td><td>'+ssid+'</td></tr>';
           }
         } else {
           html = '<tr><td>No probe requests logged</td></tr>';
@@ -618,7 +620,14 @@ $(function() {
         $('#rawlog-'+hour+'-table').empty().html('<tr><td>An error happened when loading data</td></tr>');
       });
     });
+  });
 
+  $('#nobroadcast').change(function() {
+    if ($(this).is(':checked')) {
+      $('.broadcast').hide();
+    } else {
+      $('.broadcast').show();
+    }
   });
 
   // refresh chart when window is visible again

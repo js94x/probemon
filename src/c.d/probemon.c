@@ -161,21 +161,25 @@ void parse_args(int argc, char *argv[], char **iface, uint8_t *channel, char **m
 void change_channel(const char *iface, uint8_t channel)
 {
   // look up for iw in system
+  char *paths[] = {"/sbin/iw", "/bin/iw", "/usr/sbin/iw", "/usr/bin/iw"};
   char *iw;
-  if (access("/sbin/iw", F_OK) != -1) {
-    iw = strdup("/sbin/iw");
-  } else if (access("/usr/sbin/iw", F_OK) != -1) {
-    iw = strdup("/usr/sbin/iw");
-  } else if (access("/usr/bin/iw", F_OK) != -1) {
-    iw = strdup("/usr/bin/iw");
-  } else {
-    fprintf(stderr, "Error: couldn't find iw on system (in /sbin, /usr/sbin, /usr/bin)\n");
+  bool found = false;
+  int i = 0;
+  while (!found && i < sizeof(paths)/sizeof(char *)) {
+    if (access(paths[i], F_OK) != -1) {
+      iw = paths[i];
+      found = true;
+      break;
+    }
+    i++;
+  }
+  if (!found) {
+    fprintf(stderr, "Error: couldn't find iw on system (in /{usr/}{s}bin)\n");
     exit(EXIT_FAILURE);
   }
   // change the channel to listen on
   char cmd[128];
   snprintf(cmd, 128, "%s dev %s set channel %d", iw, iface, channel);
-  free(iw);
   if (system(cmd)) {
     fprintf(stderr, "Error: can't change to channel %d with iw on interface %s\n", channel, iface);
     exit(EXIT_FAILURE);

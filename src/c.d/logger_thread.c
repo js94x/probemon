@@ -20,9 +20,7 @@ worker thread that will process the queue filled by process_packet()
 #include "manuf.h"
 #include "config_yaml.h"
 #include "lruc.h"
-
-#define MAC_CACHE_SIZE 64
-#define SSID_CACHE_SIZE 64
+#include "config.h"
 
 extern pthread_mutex_t mutex_queue;
 extern queue_t *queue;

@@ -9,9 +9,7 @@
 #include "parsers.h"
 #include "logger_thread.h"
 #include "base64.h"
-
-#define MAX_VENDOR_LENGTH 25
-#define MAX_SSID_LENGTH 15
+#include "config.h"
 
 int8_t parse_radiotap_header(const uint8_t * packet, uint16_t * freq, int8_t * rssi)
 {

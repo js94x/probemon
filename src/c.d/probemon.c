@@ -1,3 +1,4 @@
+// this implementation borrows most of its code from the twin project ssid-logger
 #include <stdio.h>
 #include <stdlib.h>
 #include <pcap/pcap.h>
@@ -21,16 +22,7 @@
 #include "db.h"
 #include "manuf.h"
 #include "config_yaml.h"
-
-#define NAME "probemon"
-#define VERSION "0.2"
-
-#define SNAP_LEN 512
-#define MAX_QUEUE_SIZE 128 // watch out. this is redefined in logger_thread.c; keep them in sync !
-
-#define DB_NAME "./probemon.db"
-#define MANUF_NAME "./manuf"
-#define CONFIG_NAME "./config.yaml"
+#include "config.h"
 
 pcap_t *handle;                 // global, to use it in sigint_handler
 queue_t *queue;                 // queue to hold parsed ap infos

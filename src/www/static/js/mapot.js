@@ -432,7 +432,7 @@ $(function() {
       } else {
         is_refreshed = true;
         var before = moment().format('YYYY-MM-DDTHH:mm:ss');
-        var after = moment(bounds.last_seen).format('YYYY-MM-DDTHH:mm:ss');
+        var after = moment.max(moment(bounds.last_seen), moment().subtract(1 ,'days')).format('YYYY-MM-DDTHH:mm:ss');
         url = '/api/probes?after='+after+'&before='+before;
       }
       _firstseen = moment().subtract(1, 'days').valueOf();

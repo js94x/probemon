@@ -174,7 +174,7 @@ void change_channel(const char *iface, uint8_t channel)
     i++;
   }
   if (!found) {
-    fprintf(stderr, "Error: couldn't find iw on system (in /{usr/}{s}bin)\n");
+    fprintf(stderr, "Error: can't find iw on system (in /{usr/}{s}bin)\n");
     exit(EXIT_FAILURE);
   }
   // change the channel to listen on
@@ -257,16 +257,16 @@ void initiliaze_pcap(pcap_t **handle, const char *iface)
 
   // only capture probe request frames
   struct bpf_program bfp;
-  char filter_exp[] = "type mgt subtype probereq";
+  char filter_exp[] = "type mgt subtype probe-req";
 
   if (pcap_compile(*handle, &bfp, filter_exp, 1, PCAP_NETMASK_UNKNOWN) == -1) {
-    fprintf(stderr, "Error: couldn't parse filter %s: %s\n",
+    fprintf(stderr, "Error: can't compile (bpf) filter '%s': %s\n",
             filter_exp, pcap_geterr(*handle));
     pcap_close(*handle);
     exit(EXIT_FAILURE);
   }
   if (pcap_setfilter(*handle, &bfp) == -1) {
-    fprintf(stderr, "Error: couldn't install filter '%s': %s\n",
+    fprintf(stderr, "Error: can't install (bpf) filter '%s': %s\n",
             filter_exp, pcap_geterr(*handle));
     pcap_close(*handle);
     exit(EXIT_FAILURE);

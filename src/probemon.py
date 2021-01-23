@@ -301,7 +301,7 @@ def main():
     print('Hit CTRL-C to exit')
     try:
         sniff(iface=args.interface, prn=build_packet_cb(config['ignored']),
-            store=0, filter='wlan type mgt subtype probe-req', stop_filter=check_event)
+            store=0, filter='type mgt subtype probe-req', stop_filter=check_event)
     except Scapy_Exception as se:
         print(f'Error: {se}', file=sys.stderr)
         sys.exit(1)

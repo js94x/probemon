@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 # -*- encoding: utf-8 -*-
 
 import time
@@ -13,6 +13,8 @@ import signal
 import struct
 import threading
 import queue
+import os.path
+from os import path
 from yaml import load as yaml_load
 try:
     from yaml import CLoader as Loader

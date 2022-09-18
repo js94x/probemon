@@ -205,7 +205,7 @@ def insert_into_db(fields, conn, c):
         ssid_id = row[0]
         cache.ssid[ssid] = ssid_id
 
-    c.execute('insert into probemon values(?, ?, ?, ?)', (date, mac_id, ssid_id, rssi))
+    c.execute('insert into probemon values(?, ?, ?, ?, ?)', (date, mac_id, ssid_id, rssi, args.channel))
 
 def build_packet_cb(ignored):
     def packet_callback(packet):
@@ -255,6 +255,7 @@ def init_db(conn, c):
         mac integer,
         ssid integer,
         rssi integer,
+        channel integer,
         foreign key(mac) references mac(id),
         foreign key(ssid) references ssid(id)
         );'''
